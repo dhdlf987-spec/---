@@ -1,0 +1,2873 @@
+<!doctype html>
+<html lang="ko">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>동화 만들기</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      background: #fff5e6;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    html {
+      height: 100%;
+    }
+    
+    /* 터치 지원을 위한 CSS 추가 */
+    .block-item, .dropped-block, .character-slot, button, 
+    .mood-tab, .category-title, .edit-btn, .delete-btn {
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 터치 가능한 요소들의 최소 크기 확보 */
+    button, .edit-btn, .delete-btn, .mood-tab {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .block-item {
+      min-height: 48px;
+    }
+    
+    .main-container {
+      display: grid;
+      grid-template-columns: 280px 1fr 340px;
+      grid-template-rows: 70px 1fr;
+      height: 100%;
+      gap: 0;
+      background: #f0e6d2;
+    }
+    
+    .header {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #ff9a56 0%, #ff6b9d 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .canvas-area {
+      background: #fffef7;
+      position: relative;
+      overflow: auto;
+      border-right: 3px solid #e6d5b8;
+      border-left: 3px solid #e6d5b8;
+    }
+    
+    .canvas-title {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #6b4423;
+      z-index: 10;
+    }
+    
+    .canvas-content {
+      padding: 70px 20px 30px 20px;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .story-container {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border: 3px solid #ffd699;
+    }
+    
+    .story-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #ffe6b3;
+    }
+    
+    .story-title-input {
+      margin: 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: #6b4423;
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 5px 8px;
+      border-radius: 6px;
+      cursor: text;
+    }
+    
+    .story-title-input:hover {
+      background: #fff9f0;
+      border-color: #ffd699;
+    }
+    
+    .story-title-input:focus {
+      outline: none;
+      background: white;
+      border-color: #ff9a56;
+      box-shadow: 0 0 0 2px rgba(255, 154, 86, 0.2);
+    }
+    
+    .story-controls {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .run-single-btn, .delete-story-btn {
+      background: white;
+      border: 2px solid #ffd699;
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+    
+    .run-single-btn:hover {
+      background: #4cd964;
+      color: white;
+      border-color: #4cd964;
+      transform: translateY(-1px);
+    }
+    
+    .delete-story-btn:hover {
+      background: #ff3b30;
+      color: white;
+      border-color: #ff3b30;
+      transform: translateY(-1px);
+    }
+    
+    .canvas-buttons {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    
+    .run-button, .add-story-button {
+      background: #4cd964;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 15px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      transition: all 0.2s ease;
+    }
+    
+    .run-button:hover {
+      background: #3eb04f;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+    }
+    
+    .add-story-button {
+      background: #5ac8fa;
+    }
+    
+    .add-story-button:hover {
+      background: #3aa3d9;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+    }
+    
+    .code-sequence {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    
+    .dropped-block {
+      background: linear-gradient(135deg, #ff9a56 0%, #ff6b9d 100%);
+      color: white;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      position: relative;
+      cursor: move;
+      transition: all 0.2s ease;
+      max-width: 450px;
+      width: fit-content;
+      word-wrap: break-word;
+      line-height: 1.6;
+    }
+    
+    .dropped-block.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+    
+    .dropped-block.drag-over-top {
+      border-top: 4px solid #ffd700;
+    }
+    
+    .dropped-block.drag-over-bottom {
+      border-bottom: 4px solid #ffd700;
+    }
+    
+    .block-category-label {
+      font-size: 11px;
+      font-weight: bold;
+      opacity: 0.9;
+      margin-bottom: 6px;
+      text-align: right;
+    }
+    
+    .dropped-block:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+    }
+    
+    .block-controls {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      display: none;
+      gap: 6px;
+    }
+    
+    .dropped-block:hover .block-controls {
+      display: flex;
+    }
+    
+    .edit-btn, .delete-btn {
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .edit-btn {
+      background: #5ac8fa;
+    }
+    
+    .delete-btn {
+      background: #ff3b30;
+    }
+    
+    .edit-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .edit-modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      width: 450px;
+      max-width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    
+    .edit-modal h3 {
+      margin-top: 0;
+      color: #6b4423;
+      font-size: 22px;
+      text-align: center;
+    }
+    
+    .edit-form-group {
+      margin-bottom: 18px;
+    }
+    
+    .edit-form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: #6b4423;
+      font-size: 14px;
+    }
+    
+    .edit-form-group select, .edit-form-group textarea, .edit-form-group input {
+      width: calc(100% - 24px);
+      padding: 10px;
+      border: 2px solid #ffd699;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Noto Sans KR', sans-serif;
+      box-sizing: border-box;
+    }
+    
+    .edit-form-group select:focus, .edit-form-group textarea:focus, .edit-form-group input:focus {
+      outline: none;
+      border-color: #ff9a56;
+      box-shadow: 0 0 0 3px rgba(255, 154, 86, 0.2);
+    }
+    
+    .edit-form-group textarea {
+      height: 90px;
+      resize: vertical;
+    }
+    
+    .character-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .character-slot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: #fff9f0;
+      border-radius: 8px;
+      border: 2px solid #ffe6b3;
+    }
+    
+    .character-slot label {
+      margin: 0;
+      min-width: 60px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #6b4423;
+    }
+    
+    .character-slot select {
+      flex: 1;
+      padding: 6px;
+      border: 2px solid #ffd699;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    
+    .remove-character-slot {
+      background: #ff3b30;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .add-character-slot-btn {
+      background: #4cd964;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      width: 100%;
+    }
+    
+    .add-character-slot-btn:hover {
+      background: #3eb04f;
+    }
+    
+    .edit-modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    
+    .edit-modal-buttons button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: bold;
+    }
+    
+    .save-btn {
+      background: #4cd964;
+      color: white;
+    }
+    
+    .cancel-btn {
+      background: #8e8e93;
+      color: white;
+    }
+    
+    .drop-zone {
+      min-height: 200px;
+      border: 3px dashed #ffd699;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #b8956a;
+      font-size: 16px;
+      margin-top: 20px;
+      transition: all 0.3s ease;
+      padding: 20px;
+      background: #fffef7;
+    }
+    
+    .drop-zone.drag-over {
+      border-color: #ff9a56;
+      background: rgba(255, 154, 86, 0.1);
+      color: #ff9a56;
+    }
+    
+    .drop-zone.has-blocks {
+      border: none;
+      background: none;
+      min-height: auto;
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
+    
+    .connection-line {
+      width: 4px;
+      height: 20px;
+      background: linear-gradient(180deg, #ffd699 0%, #ffb366 100%);
+      align-self: flex-start;
+      margin-left: 20px;
+      border-radius: 2px;
+    }
+    
+    .blocks-panel {
+      background: #fff9f0;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 3px solid #e6d5b8;
+    }
+    
+    .blocks-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #6b4423;
+      margin-bottom: 15px;
+      text-align: center;
+      border-bottom: 3px solid #ff9a56;
+      padding-bottom: 10px;
+    }
+    
+    .character-builder {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 12px;
+      border: 2px solid #ffd699;
+    }
+    
+    .character-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #6b4423;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    
+    .character-input-group {
+      margin-bottom: 10px;
+    }
+    
+    .character-input-group input, .character-input-group textarea {
+      width: calc(100% - 20px);
+      padding: 8px;
+      border: 2px solid #ffd699;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Noto Sans KR', sans-serif;
+      box-sizing: border-box;
+    }
+    
+    .character-input-group textarea {
+      height: 60px;
+      resize: vertical;
+    }
+    
+    .add-character-btn {
+      background: #ff9a56;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      margin-top: 10px;
+      width: 100%;
+    }
+    
+    .add-character-btn:hover {
+      background: #ff7a36;
+    }
+    
+    .created-characters {
+      margin-top: 12px;
+    }
+    
+    .character-item {
+      background: #ffe6f0;
+      padding: 10px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      font-size: 12px;
+      position: relative;
+      border: 2px solid #ffb3d9;
+    }
+    
+    .character-item .delete-char {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: transparent;
+      color: #ff3b30;
+      border: none;
+      border-radius: 0;
+      width: auto;
+      height: auto;
+      font-size: 18px;
+      cursor: pointer;
+      font-weight: bold;
+      padding: 0;
+      line-height: 1;
+    }
+    
+    .character-item .delete-char:hover {
+      color: #cc0000;
+      transform: scale(1.2);
+    }
+    
+    .block-category {
+      margin-bottom: 20px;
+    }
+    
+    .category-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #6b4423;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 10px;
+      background: white;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      border: 2px solid #ffd699;
+    }
+    
+    .category-title:hover {
+      background: #fff9f0;
+    }
+    
+    .category-title.active {
+      background: linear-gradient(135deg, #ff9a56 0%, #ff6b9d 100%);
+      color: white;
+      border-color: #ff9a56;
+    }
+    
+    .category-content {
+      display: none;
+      margin-top: 10px;
+    }
+    
+    .category-content.active {
+      display: block;
+    }
+    
+    .mood-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+    
+    .mood-tab {
+      background: #ffe6b3;
+      color: #6b4423;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      border: 2px solid #ffd699;
+    }
+    
+    .mood-tab:hover {
+      background: #ffd699;
+      transform: translateY(-1px);
+    }
+    
+    .mood-tab.active {
+      background: linear-gradient(135deg, #ff9a56 0%, #ff6b9d 100%);
+      color: white;
+      border-color: #ff9a56;
+    }
+    
+    .mood-blocks {
+      display: none;
+    }
+    
+    .mood-blocks.active {
+      display: block;
+    }
+    
+    .block-item {
+      background: linear-gradient(135deg, #ff9a56 0%, #ff6b9d 100%);
+      color: white;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      border-radius: 10px;
+      cursor: grab;
+      font-size: 12px;
+      transition: all 0.2s ease;
+      user-select: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      line-height: 1.5;
+    }
+    
+    .block-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+    
+    .block-item:active {
+      cursor: grabbing;
+    }
+    
+    /* 터치 드래그 시 따라다니는 블록 스타일 */
+    .touch-drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0.8;
+      transform: scale(1.05);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      transition: none;
+    }
+    
+    .free-input-container {
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+      border: 2px solid #ffd699;
+      margin-bottom: 10px;
+    }
+    
+    .free-input-container textarea {
+      width: calc(100% - 20px);
+      padding: 8px;
+      border: 2px solid #ffd699;
+      border-radius: 6px;
+      font-size: 13px;
+      height: 70px;
+      resize: vertical;
+      font-family: 'Noto Sans KR', sans-serif;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+    
+    .free-input-container button {
+      background: #ff9a56;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      width: 100%;
+    }
+    
+    .free-input-container button:hover {
+      background: #ff7a36;
+    }
+    
+    .story-panel {
+      background: #fff9f0;
+      padding: 25px;
+      overflow-y: auto;
+      border-left: 3px solid #e6d5b8;
+    }
+    
+    .story-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #6b4423;
+      margin-bottom: 15px;
+      text-align: center;
+      border-bottom: 3px solid #ff9a56;
+      padding-bottom: 10px;
+    }
+    
+    .story-content {
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      line-height: 2;
+      font-size: 15px;
+      color: #4a4a4a;
+      min-height: 400px;
+      border: 3px solid #ffd699;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      outline: none;
+      cursor: text;
+    }
+    
+    .story-content.empty {
+      color: #b8956a;
+      font-style: italic;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .story-content:not(.empty):hover {
+      border-color: #ff9a56;
+      box-shadow: 0 4px 16px rgba(255, 154, 86, 0.3);
+    }
+    
+    .story-content:focus {
+      border-color: #ff6b9d;
+      box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2);
+    }
+    
+    .story-content p {
+      margin-bottom: 15px;
+      text-indent: 20px;
+    }
+    
+    .story-edit-notice {
+      background: #e6f7ff;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border-left: 4px solid #5ac8fa;
+      font-size: 14px;
+      color: #2c5a7a;
+      text-align: center;
+    }
+    
+    @media (max-width: 1200px) {
+      .main-container {
+        grid-template-columns: 250px 1fr 300px;
+      }
+    }
+  </style>
+ </head>
+ <body>
+  <div class="main-container">
+   <div class="header">
+    <h1 id="main-title">📚 우리들의 동화책 만들기</h1>
+   </div>
+   <div class="blocks-panel">
+    <div class="blocks-title">
+     🎨 이야기 블록
+    </div>
+    <div class="character-builder">
+     <div class="character-title">
+      👤 인물 만들기
+     </div>
+     <div class="character-input-group"><input type="text" id="character-name" placeholder="인물 이름 (예: 토끼, 철수)">
+     </div>
+     <div class="character-input-group"><textarea id="character-description" placeholder="인물의 외모, 성격, 직업이나 역할 등을 입력하세요.
+예: 빨간 모자를 쓴 용감한 소녀"></textarea>
+     </div><button class="add-character-btn" id="add-character-btn">인물 추가하기</button>
+     <div class="created-characters" id="created-characters"></div>
+    </div>
+    <div class="block-category">
+     <div class="category-title" data-category="start">
+      🌱 시작
+     </div>
+     <div class="category-content" id="start-content">
+      <div class="mood-tabs" id="start-tabs"></div>
+      <div id="start-blocks"></div>
+     </div>
+    </div>
+    <div class="block-category">
+     <div class="category-title" data-category="problem">
+      ⚠️ 문제 발생
+     </div>
+     <div class="category-content" id="problem-content">
+      <div class="mood-tabs" id="problem-tabs"></div>
+      <div id="problem-blocks"></div>
+     </div>
+    </div>
+    <div class="block-category">
+     <div class="category-title" data-category="reversal">
+      🎪 반전
+     </div>
+     <div class="category-content" id="reversal-content">
+      <div class="mood-tabs" id="reversal-tabs"></div>
+      <div id="reversal-blocks"></div>
+     </div>
+    </div>
+    <div class="block-category">
+     <div class="category-title" data-category="solution">
+      ✨ 문제 해결
+     </div>
+     <div class="category-content" id="solution-content">
+      <div class="mood-tabs" id="solution-tabs"></div>
+      <div id="solution-blocks"></div>
+     </div>
+    </div>
+    <div class="block-category">
+     <div class="category-title" data-category="lesson">
+      💡 교훈
+     </div>
+     <div class="category-content" id="lesson-content">
+      <div class="mood-tabs" id="lesson-tabs"></div>
+      <div id="lesson-blocks"></div>
+     </div>
+    </div>
+    <div class="block-category">
+     <div class="category-title" data-category="free">
+      ✍️ 자유블록
+     </div>
+     <div class="category-content" id="free-content">
+      <div style="padding: 10px; background: #fff9f0; border-radius: 8px; margin-bottom: 10px; font-size: 12px; color: #6b4423;">
+       💡 자유롭게 문장을 만들어보세요!
+      </div>
+      <div class="free-input-container"><textarea id="free-block-input" placeholder="여기에 자유롭게 문장을 입력하세요!
+예: 햇살이 반짝이는 아침이었어요."></textarea> <button onclick="addFreeBlock()">블록 만들기</button>
+      </div>
+      <div id="free-blocks"></div>
+     </div>
+    </div>
+   </div>
+   <div class="canvas-area">
+    <div class="canvas-title">
+     ✏️ 이야기 만들기
+    </div>
+    <div class="canvas-buttons"><button class="run-button" id="run-button">▶️ 모든 이야기 보기</button> <button class="add-story-button" id="add-story-button">➕ 새 이야기</button>
+    </div>
+    <div class="canvas-content" id="canvas-content">
+     <div class="story-container" data-story-id="0">
+      <div class="story-header">
+       <h3 class="story-title-input" contenteditable="true">나의 첫 번째 동화</h3>
+       <div class="story-controls"><button class="run-single-btn" data-story-id="0">▶️</button> <button class="delete-story-btn" data-story-id="0">🗑️</button>
+       </div>
+      </div>
+      <div class="drop-zone" data-story-id="0">
+       여기에 블록을 끌어다 놓으면<br>
+        멋진 동화가 완성돼요! 📖✨
+      </div>
+     </div>
+    </div>
+   </div>
+   <div class="story-panel">
+    <div class="story-title">
+     📖 완성된 동화
+    </div>
+    <div class="story-edit-notice">
+     ✏️ 여기서는 완성된 동화를 자유롭게 편집할 수 있어요!
+    </div>
+    <div class="story-content empty" id="story-content" contenteditable="true">
+     왼쪽에서 블록을 놓고<br>
+     ▶️ 버튼을 눌러보세요!
+    </div>
+   </div>
+  </div>
+  
+  <div class="edit-modal" id="edit-modal">
+   <div class="edit-modal-content">
+    <h3>🎯 블록 설정하기</h3>
+    <div class="edit-form-group" id="free-text-section" style="display: none;"><label>✍️ 자유 문장:</label> <textarea id="free-text-edit"></textarea>
+    </div>
+    <div class="edit-form-group" id="character-section"><label>등장 인물:</label>
+     <div class="character-slots" id="character-slots"></div><button class="add-character-slot-btn" onclick="addCharacterSlot()">➕ 인물 추가</button>
+    </div>
+    <div id="dropdown-sections"></div>
+    <div class="edit-modal-buttons"><button class="cancel-btn" onclick="closeEditModal()">취소</button> <button class="save-btn" onclick="saveBlockEdit()">저장</button>
+    </div>
+   </div>
+  </div>
+  
+  <script>
+    const defaultConfig = {
+      main_title: "📚 우리들의 동화책 만들기",
+      primary_color: "#ff9a56",
+      secondary_color: "#ff6b9d",
+      accent_color: "#4cd964"
+    };
+
+    const moods = {
+      감동: { name: "😢 감동", emoji: "😢", color: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)", borderColor: "#ff9a9e" },
+      웃음: { name: "😄 웃음", emoji: "😄", color: "linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)", borderColor: "#fdcb6e" },
+      긴장: { name: "👻 긴장", emoji: "👻", color: "linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)", borderColor: "#a29bfe" },
+      모험: { name: "🗺️ 모험", emoji: "🗺️", color: "linear-gradient(135deg, #55efc4 0%, #81ecec 100%)", borderColor: "#55efc4" },
+      성장: { name: "💪 성장", emoji: "💪", color: "linear-gradient(135deg, #74b9ff 0%, #0984e3 100%)", borderColor: "#74b9ff" },
+      우정: { name: "👫 우정", emoji: "👫", color: "linear-gradient(135deg, #fdcb6e 0%, #ffeaa7 100%)", borderColor: "#fdcb6e" },
+      사랑: { name: "❤️ 사랑", emoji: "❤️", color: "linear-gradient(135deg, #fd79a8 0%, #fab1a0 100%)", borderColor: "#fd79a8" },
+      신남: { name: "🎉 신남", emoji: "🎉", color: "linear-gradient(135deg, #ff7675 0%, #feca57 100%)", borderColor: "#ff7675" },
+      신비: { name: "🤔 신비", emoji: "🤔", color: "linear-gradient(135deg, #a29bfe 0%, #dfe6e9 100%)", borderColor: "#a29bfe" }
+    };
+    
+    const dropdownOptions = {
+      장소: ["공원", "화장실", "학교", "골목", "시장", "숲 속", "산꼭대기", "강가", "동굴", "마을", "성", "바닷가", "하늘", "놀이터", "도서관", "집", "호수", "정원", "다리", "광장"],
+      감정: ["신나게", "무서워서", "급하게", "즐겁게", "조심스럽게", "용감하게", "걱정하며", "설레며", "떨리는 마음으로", "씩씩하게", "두근두근", "살며시", "당당하게", "부끄러워하며"],
+      동물: ["토끼", "거북이", "다람쥐", "새", "여우", "곰", "사슴", "고양이", "강아지", "코끼리", "기린", "사자", "호랑이", "원숭이", "독수리", "물고기", "양", "말", "돼지", "늑대"],
+      음식: ["맛있는 과일", "따뜻한 빵", "달콤한 꿀", "시원한 물", "향긋한 차", "특별한 요리", "맛있는 케이크", "신선한 샐러드", "고소한 쿠키", "맛있는 수프", "달콤한 사탕"],
+      마법물건: ["빛나는 돌", "낡은 지도", "마법 반지", "이상한 열쇠", "금빛 깃털", "신비한 책", "반짝이는 구슬", "마법 지팡이", "신비한 거울", "요술 램프", "마법 목걸이", "신비한 나침반"],
+      문제상황: ["길을 잃었어요", "다쳤어요", "배가 고팠어요", "무서웠어요", "외로웠어요", "걱정이 됐어요", "슬펐어요", "화가 났어요", "지쳤어요", "힘들었어요"],
+      협력자: ["친구", "할머니", "할아버지", "마법사", "요정", "동물 친구", "용감한 기사", "착한 이웃", "선생님", "형제자매", "마을 사람", "신비한 존재"],
+      해결방법: ["용기를 냈어요", "지혜를 발휘했어요", "함께 힘을 모았어요", "포기하지 않았어요", "친절하게 도왔어요", "끝까지 노력했어요", "서로 이해했어요", "침착하게 생각했어요"],
+      느낀감정: ["행복했어요", "뿌듯했어요", "감사했어요", "신났어요", "평화로웠어요", "따뜻했어요", "기뻤어요", "자랑스러웠어요", "만족스러웠어요", "편안했어요"]
+    };
+
+    const storyData = {
+      start: {
+        감동: [
+          "{주인공}이(가) [장소]에서 쓸쓸히 혼자 있었어요",
+          "옛날 옛적에 {주인공}이(가) [협력자]를 그리워하고 있었어요",
+          "{주인공}이(가) [감정] 터벅터벅 걸어가고 있었어요",
+          "{주인공}이(가) [장소]에서 따뜻하게 만났어요",
+          "{주인공}이(가) 작은 [동물]를 [장소]에서 발견했어요",
+          "{주인공}이(가) [장소]에서 조용히 앉아 있었어요",
+          "{주인공}이(가) [협력자]의 손을 꼭 잡았어요",
+          "비 오는 날 {주인공}이(가) [장소]에 혼자 서 있었어요",
+          "{주인공}이(가) [장소]에서 눈물을 흘리고 있었어요",
+          "{주인공}이(가) [동물]를 보며 미소 지었어요",
+          "{주인공}이(가) [장소]에서 누군가를 기다리고 있었어요",
+          "{주인공}이(가) [협력자]를 생각하며 [장소]를 걸었어요"
+        ],
+        웃음: [
+          "{주인공}이 [장소]에서 뒤뚱뒤뚱 걸어가다가 넘어졌어요",
+          "{주인공}이 [음식]를 먹다가 꾸르륵 배가 울렸어요",
+          "어느 날 {주인공}이 [동물]처럼 깡충깡충 뛰어다녔어요",
+          "{주인공}이 우당탕탕 [장소]를 돌아다녔어요",
+          "{주인공}이 [마법물건]를 보고 눈이 휘둥그레졌어요",
+          "{주인공}이 [장소]에서 재채기를 연달아 했어요",
+          "{주인공}이 [음식]를 먹다가 입가에 잔뜩 묻혔어요",
+          "{주인공}이 [동물]를 따라하다가 우스꽝스러워졌어요",
+          "{주인공}이 [장소]에서 미끄러져 데굴데굴 굴렀어요",
+          "{주인공}이 [마법물건]를 거꾸로 들고 있었어요",
+          "{주인공}이 [동물]와 숨바꼭질을 하다가 헷갈렸어요",
+          "{주인공}이 [장소]에서 방향을 착각해서 빙빙 돌았어요"
+        ],
+        긴장: [
+          "깜깜한 밤 {주인공}이 [장소]에서 이상한 소리를 들었어요",
+          "{주인공}이 [장소]를 지나가는데 으스스 바람이 불었어요",
+          "갑자기 {주인공} 앞에 [동물]가 쏜살같이 나타났어요",
+          "{주인공}이 [장소]에서 떨리는 마음으로 걸어갔어요",
+          "어둠 속에서 {주인공}이 [마법물건]를 발견했어요",
+          "{주인공}이 [장소]에서 무언가의 그림자를 봤어요",
+          "조용하던 [장소]에 갑자기 큰 소리가 났어요",
+          "{주인공}이 [장소]로 들어가는데 문이 삐걱 소리를 냈어요",
+          "{주인공}이 [장소]에서 숨을 죽이고 귀를 기울였어요",
+          "{주인공} 뒤에서 발자국 소리가 다가왔어요",
+          "{주인공}이 [장소]에서 이상한 기운을 느꼈어요",
+          "{주인공}이 [동물]의 날카로운 눈빛을 마주쳤어요"
+        ],
+        모험: [
+          "{주인공}이 [마법물건]를 들고 [장소]로 씽씽 달려갔어요",
+          "먼 옛날 {주인공}이 신비한 [장소]를 발견했어요",
+          "{주인공}이 [동물]와 함께 두근두근 모험을 떠났어요",
+          "{주인공}이 [마법물건]를 찾아 헤매고 있었어요",
+          "{주인공}이 [장소]에서 신기한 문을 발견했어요",
+          "{주인공}이 [마법물건]를 품에 안고 여행을 시작했어요",
+          "용감한 {주인공}이 [장소]로 탐험을 떠났어요",
+          "{주인공}이 [동물]의 안내로 미지의 땅으로 갔어요",
+          "{주인공}이 [장소]로 가는 지도를 펼쳤어요",
+          "{주인공}이 [마법물건]를 메고 출발했어요",
+          "{주인공}이 전설의 [장소]를 찾아 나섰어요",
+          "{주인공}이 [협력자]와 함께 긴 여정을 시작했어요"
+        ],
+        성장: [
+          "{주인공}이 [장소]에서 새로운 하루를 시작했어요",
+          "{주인공}이 처음으로 [동물]을 돌보게 되었어요",
+          "{주인공}이 [음식]를 정성껏 만들어줬어요",
+          "{주인공}이 [장소]에서 혼자서 해내기로 했어요",
+          "오늘은 {주인공}이 [협력자]를 도와주기로 했어요",
+          "{주인공}이 [장소]에서 중요한 임무를 맡았어요",
+          "{주인공}이 [동물]를 위해 책임지기로 했어요",
+          "{주인공}이 [장소]에서 새로운 도전을 시작했어요",
+          "{주인공}이 [협력자]에게 배우기로 했어요",
+          "{주인공}이 [장소]에서 용기를 내기로 다짐했어요",
+          "{주인공}이 [장소]에서 어른스러운 결정을 했어요",
+          "{주인공}이 스스로 [동물]를 돌보기 시작했어요"
+        ],
+        우정: [
+          "{주인공}이 [장소]에서 처음 만났어요",
+          "{주인공}이 외로운 [동물]와 친구가 되었어요",
+          "{주인공}이 [음식]를 나눠줬어요",
+          "{주인공}이 [장소]에서 재미있게 놀았어요",
+          "{주인공}이 [마법물건]를 함께 발견했어요",
+          "{주인공}이 [장소]에서 새로운 친구를 만났어요",
+          "{주인공}이 [동물]와 함께 [장소]를 산책했어요",
+          "{주인공}이 친구에게 [음식]를 선물했어요",
+          "{주인공}이 [장소]에서 손을 흔들며 인사했어요",
+          "{주인공}이 [동물]와 함께 웃었어요",
+          "{주인공}이 [장소]에서 친구와 약속을 했어요",
+          "{주인공}이 친구를 위해 [마법물건]를 찾아줬어요"
+        ],
+        사랑: [
+          "{주인공}이 가족을 위해 [음식]를 정성껏 준비했어요",
+          "{주인공}이 따뜻하게 안아줬어요",
+          "{주인공}이 [동물]를 사랑스럽게 쓰다듬었어요",
+          "{주인공}이 [장소]에서 행복한 시간을 보냈어요",
+          "{주인공}이 [협력자]에게 고마운 마음을 전했어요",
+          "{주인공}이 [동물]에게 부드럽게 말을 걸었어요",
+          "{주인공}이 [협력자]와 함께 [음식]를 먹었어요",
+          "{주인공}이 [장소]에서 소중한 사람들과 모였어요",
+          "{주인공}이 [협력자]에게 편지를 썼어요",
+          "{주인공}이 [동물]를 위해 집을 만들어줬어요",
+          "{주인공}이 [장소]에서 사랑하는 이를 기다렸어요",
+          "{주인공}이 [협력자]를 위해 [마법물건]를 준비했어요"
+        ],
+        신남: [
+          "{주인공}이 [장소]에 도착해서 와아 소리쳤어요",
+          "{주인공}이 [마법물건]를 보고 신나게 뛰어올랐어요",
+          "{주인공}이 [장소]에서 재미있는 것을 발견했어요",
+          "{주인공}이 [동물]와 깔깔깔 웃으며 놀았어요",
+          "드디어 {주인공}이 기다리던 날이 왔어요",
+          "{주인공}이 [장소]에서 노래를 흥얼거렸어요",
+          "{주인공}이 [음식]를 먹으며 행복해했어요",
+          "{주인공}이 [장소]에서 춤을 추며 기뻐했어요",
+          "{주인공}이 [마법물건]를 들고 팔짝팔짝 뛰었어요",
+          "{주인공}이 [장소]에서 만세를 외쳤어요",
+          "{주인공}이 [동물]와 함께 신나게 달렸어요",
+          "{주인공}이 [장소]에서 축제를 즐겼어요"
+        ],
+        신비: [
+          "{주인공}이 [장소]에서 이상한 [마법물건]를 발견했어요",
+          "신비로운 빛이 {주인공}을 [장소]로 이끌었어요",
+          "{주인공}이 [동물]의 수상한 행동을 발견했어요",
+          "{주인공}이 [장소]에서 비밀스러운 문을 봤어요",
+          "{주인공}이 [마법물건]에서 반짝반짝 빛이 나는 걸 봤어요",
+          "{주인공}이 [장소]에서 이상한 소리를 따라갔어요",
+          "낯선 [동물]가 {주인공}에게 다가왔어요",
+          "{주인공}이 [마법물건]를 만지자 빛이 났어요",
+          "{주인공}이 [장소]에서 별이 쏟아지는 걸 봤어요",
+          "{주인공}이 [마법물건]에서 속삭이는 소리를 들었어요",
+          "{주인공}이 [장소]에서 시간이 멈춘 듯한 느낌을 받았어요",
+          "{주인공}이 [동물]가 말하는 것을 들었어요"
+        ]
+      },
+      problem: {
+        감동: [
+          "{주인공}이 [문제상황]",
+          "{주인공}이 헤어지게 되었어요",
+          "{주인공}이 소중한 [마법물건]를 잃어버렸어요",
+          "[동물]가 아파서 {주인공}이 걱정했어요",
+          "{주인공}이 [장소]에서 혼자 남겨졌어요",
+          "{주인공}이 [협력자]를 찾을 수 없었어요",
+          "[동물]가 {주인공}를 알아보지 못했어요",
+          "{주인공}이 [장소]에서 눈물을 흘렸어요",
+          "{주인공}이 [협력자]와 이별해야 했어요",
+          "{주인공}이 [장소]에서 쓸쓸히 기다렸어요",
+          "{주인공}이 소중한 [음식]를 나눠줄 수 없었어요",
+          "{주인공}이 [협력자]의 아픔을 함께 느꼈어요"
+        ],
+        웃음: [
+          "{주인공}이 [음식]를 먹다가 배가 너무 불러서 움직일 수 없었어요",
+          "{주인공}의 머리에 [동물]가 폴짝 올라탔어요",
+          "{주인공}이 [마법물건]를 잡아당겼어요",
+          "{주인공}이 [장소]에서 빙글빙글 돌다가 어지러웠어요",
+          "{주인공}이 [동물]와 말이 통하지 않았어요",
+          "{주인공}이 [음식]를 쏟아버렸어요",
+          "{주인공}이 [장소]에서 계속 헛발질을 했어요",
+          "{주인공}이 [마법물건]를 잘못 사용했어요",
+          "{주인공}이 [동물]에게 쫓기며 도망쳤어요",
+          "{주인공}이 [장소]에서 방향을 헷갈렸어요",
+          "{주인공}이 [동물]와 부딪혀서 나동그라졌어요",
+          "{주인공}이 [마법물건]가 거꾸로 작동해서 당황했어요"
+        ],
+        긴장: [
+          "갑자기 {주인공}이 [장소]에 갇혀버렸어요",
+          "[동물]가 {주인공}를 쫓아오기 시작했어요",
+          "{주인공}이 [마법물건]를 만지자 이상한 일이 벌어졌어요",
+          "무서운 소리가 [장소]에서 들려왔어요",
+          "{주인공}이 [문제상황]",
+          "{주인공}이 [장소]에서 출구를 찾지 못했어요",
+          "어둠이 [장소]를 뒤덮었어요",
+          "{주인공}이 [마법물건]를 떨어뜨렸어요",
+          "{주인공} 앞에 커다란 그림자가 나타났어요",
+          "{주인공}이 [장소]에서 갑자기 발이 묶였어요",
+          "{주인공}이 [동물]의 날카로운 발톱을 피했어요",
+          "{주인공}이 [장소]에서 숨을 곳을 찾지 못했어요"
+        ],
+        모험: [
+          "{주인공}이 [장소]에서 큰 장애물을 만났어요",
+          "[마법물건]가 사라져버렸어요",
+          "{주인공}이 [장소]로 가는 길을 잃어버렸어요",
+          "강력한 [동물]가 길을 막았어요",
+          "{주인공}이 서로 다른 길로 가게 되었어요",
+          "{주인공}이 [장소]에서 다리가 무너졌어요",
+          "폭풍이 {주인공}의 앞을 가로막았어요",
+          "{주인공}이 [마법물건]의 저주를 받았어요",
+          "[장소]가 이상하게 변했어요",
+          "{주인공}이 자신의 모습이 달라진 걸 발견했어요",
+          "{주인공}이 [마법물건]에 갇혀버렸어요",
+          "{주인공}이 [장소]에서 시간이 멈춘 걸 알았어요",
+          "{주인공}이 [동물]의 진짜 모습을 보게 됐어요",
+          "{주인공}이 [장소]가 환상이라는 걸 깨달았어요"
+        ],
+        성장: [
+          "{주인공}이 [문제상황]",
+          "{주인공}이 혼자서 해야 하는데 어려웠어요",
+          "{주인공}이 의견이 달라서 고민했어요",
+          "{주인공}이 [동물]를 돌보는 게 힘들었어요",
+          "{주인공}이 [장소]에서 중요한 선택을 해야 했어요",
+          "{주인공}이 실수를 하고 말았어요",
+          "{주인공}이 [협력자]의 기대에 미치지 못했어요",
+          "{주인공}이 [장소]에서 포기하고 싶어졌어요",
+          "{주인공}이 [협력자]에게 혼났어요",
+          "{주인공}이 [장소]에서 자신감을 잃었어요",
+          "{주인공}이 [동물]를 제대로 돌보지 못했어요",
+          "{주인공}이 [음식]를 만드는 게 너무 어려웠어요"
+        ],
+        우정: [
+          "{주인공}이 친구와 싸웠어요",
+          "{주인공}이 친구에게 오해를 받았어요",
+          "[동물]가 {주인공}를 피했어요",
+          "{주인공}이 친구의 마음을 몰라줬어요",
+          "{주인공}이 친구들과 [장소]에서 떨어졌어요",
+          "{주인공}이 친구에게 상처를 줬어요",
+          "{주인공}이 [음식]를 나누지 않았어요",
+          "{주인공}이 친구의 비밀을 말해버렸어요",
+          "{주인공}이 친구를 [장소]에서 찾지 못했어요",
+          "{주인공}이 [동물]와 헤어지게 되었어요",
+          "{주인공}이 친구의 [마법물건]를 잃어버렸어요",
+          "{주인공}이 약속을 지키지 못했어요"
+        ],
+        사랑: [
+          "{주인공}이 가족에게 서운한 마음이 들었어요",
+          "{주인공}이 친구의 마음을 몰라줬어요",
+          "{주인공}이 [협력자]에게 고마움을 표현하지 못했어요",
+          "[동물]가 {주인공}를 떠나려고 했어요",
+          "{주인공}이 소중한 사람과 멀어졌어요",
+          "{주인공}이 [협력자]와 오해가 생겼어요",
+          "{주인공}이 사랑하는 [동물]를 잃을까봐 두려웠어요",
+          "{주인공}이 [장소]에서 외로움을 느꼈어요",
+          "{주인공}이 [협력자]의 마음을 아프게 했어요",
+          "{주인공}이 [동물]를 보살피지 못했어요",
+          "{주인공}이 [음식]를 함께 먹지 못했어요",
+          "{주인공}이 [마법물건]를 혼자만 가지려 했어요"
+        ],
+        신남: [
+          "{주인공}이 너무 신나서 [마법물건]를 떨어뜨렸어요",
+          "{주인공}이 너무 많이 놀아서 지쳤어요",
+          "{주인공}이 [음식]를 너무 많이 먹어버렸어요",
+          "[동물]들이 와르르 모여들어 시끄러웠어요",
+          "{주인공}이 [장소]에서 정신없이 돌아다녔어요",
+          "{주인공}이 신나서 [장소]를 어질러놨어요",
+          "{주인공}이 [마법물건]를 잃어버렸어요",
+          "{주인공}이 너무 빨리 달려서 넘어졌어요",
+          "{주인공}이 [동물]들과 부딪혔어요",
+          "{주인공}이 [장소]에서 물건을 떨어뜨렸어요",
+          "{주인공}이 즐거워서 [협력자]의 말을 듣지 못했어요",
+          "{주인공}이 신나서 [음식]를 쏟아버렸어요"
+        ],
+        신비: [
+          "[마법물건]가 갑자기 사라졌어요",
+          "{주인공}이 [장소]에서 이상한 현상을 목격했어요",
+          "{주인공}의 기억이 없어졌어요",
+          "[동물]가 알 수 없는 말을 했어요",
+          "{주인공}이 다른 세계로 빠져들었어요",
+          "{주인공}이 [마법물건]의 저주를 받았어요",
+          "[장소]가 이상하게 변했어요",
+          "{주인공}이 자신의 모습이 달라진 걸 발견했어요",
+          "{주인공}이 [마법물건]에 갇혀버렸어요",
+          "{주인공}이 [장소]에서 시간이 멈춘 걸 알았어요",
+          "{주인공}이 [동물]의 진짜 모습을 보게 됐어요",
+          "{주인공}이 [장소]가 환상이라는 걸 깨달았어요"
+        ]
+      },
+  reversal: {
+        감동: [
+          "그런데 사실은 {주인공}이 [협력자]를 그리워하고 있었어요",
+          "알고 보니 {주인공}의 진심이 전해졌어요",
+          "뜻밖에도 {주인공}이 가장 소중한 걸 깨달았어요",
+          "바로 그때 {주인공}의 마음이 변했어요",
+          "순간 {주인공}은 [느낀감정]",
+          "진짜 이유는 {주인공}이 사랑했기 때문이에요",
+          "숨겨진 비밀은 {주인공}의 따뜻한 마음이었어요",
+          "사실 {주인공}은 처음부터 알고 있었어요",
+          "그런데 {주인공}이 용기를 내기로 했어요",
+          "알고 보니 모두가 {주인공}을 응원하고 있었어요",
+          "바로 그 순간 {주인공}은 눈물이 났어요",
+          "뜻밖에도 [협력자]가 {주인공}을 기다리고 있었어요"
+        ],
+        웃음: [
+          "그런데 사실은 {주인공}이 일부러 그런 거였어요",
+          "알고 보니 [동물]가 장난을 친 거였어요",
+          "뜻밖에도 {주인공}이 실수로 성공했어요",
+          "바로 그때 {주인공}이 재채기를 했어요",
+          "순간 모든 게 뒤죽박죽이 되었어요",
+          "진짜 이유는 [음식] 때문이었어요",
+          "숨겨진 비밀은 {주인공}이 배가 고팠다는 거예요",
+          "사실 {주인공}은 길을 잘못 들었어요",
+          "그런데 {주인공}이 엉뚱한 곳으로 갔어요",
+          "알고 보니 [마법물건]가 고장났어요",
+          "뜻밖에도 그게 정답이었어요",
+          "바로 그 순간 모두가 웃음을 터뜨렸어요"
+        ],
+        긴장: [
+          "그런데 사실은 더 큰 위험이 기다리고 있었어요",
+          "알고 보니 {주인공}이 함정에 빠진 거였어요",
+          "뜻밖에도 [동물]가 적이 아니었어요",
+          "바로 그때 [장소]가 무너지기 시작했어요",
+          "순간 {주인공}은 진실을 깨달았어요",
+          "진짜 위험은 [마법물건]에 숨어있었어요",
+          "숨겨진 비밀은 [장소]에 저주가 있다는 거예요",
+          "사실 {주인공}은 시간이 얼마 없었어요",
+          "그런데 탈출구가 사라져버렸어요",
+          "알고 보니 모든 게 누군가의 계획이었어요",
+          "뜻밖에도 [동물]가 {주인공}을 시험하고 있었어요",
+          "바로 그 순간 더 큰 소리가 들렸어요"
+        ],
+        모험: [
+          "그런데 사실은 [마법물건]가 살아있었어요",
+          "알고 보니 {주인공}이 특별한 능력이 있었어요",
+          "뜻밖에도 [장소]가 다른 세계로 통하는 문이었어요",
+          "바로 그때 신비한 빛이 {주인공}을 감쌌어요",
+          "순간 {주인공}은 새로운 세계를 발견했어요",
+          "진짜 보물은 [마법물건]가 아니었어요",
+          "숨겨진 비밀은 {주인공}이 선택받은 자라는 거예요",
+          "사실 {주인공}의 여행은 이제 시작이었어요",
+          "그런데 [동물]가 안내자였어요",
+          "알고 보니 전설이 진짜였어요",
+          "뜻밖에도 [장소]에 비밀 통로가 있었어요",
+          "바로 그 순간 하늘이 열렸어요"
+        ],
+        성장: [
+          "그런데 사실은 {주인공}이 혼자 할 수 있었어요",
+          "알고 보니 {주인공}이 이미 성장해 있었어요",
+          "뜻밖에도 실패가 가장 큰 배움이었어요",
+          "바로 그때 {주인공}은 자신감을 얻었어요",
+          "순간 {주인공}은 방법을 깨달았어요",
+          "진짜 시험은 [해결방법] 것이었어요",
+          "숨겨진 의미는 과정이 중요하다는 거예요",
+          "사실 {주인공}은 이미 답을 알고 있었어요",
+          "그런데 {주인공}이 스스로 선택했어요",
+          "알고 보니 [협력자]의 가르침이 맞았어요",
+          "뜻밖에도 {주인공}이 가장 잘 할 수 있었어요",
+          "바로 그 순간 {주인공}은 깨달았어요"
+        ],
+        우정: [
+          "그런데 사실은 친구가 {주인공}을 걱정했던 거예요",
+          "알고 보니 오해였어요",
+          "뜻밖에도 [동물]가 {주인공}을 지켜주고 있었어요",
+          "바로 그때 친구의 진심을 알게 되었어요",
+          "순간 {주인공}은 미안한 마음이 들었어요",
+          "진짜 이유는 친구를 아꼈기 때문이에요",
+          "숨겨진 마음은 함께 있고 싶다는 거였어요",
+          "사실 친구도 같은 마음이었어요",
+          "그런데 [동물]가 둘을 이어주었어요",
+          "알고 보니 서로를 가장 잘 아는 사이였어요",
+          "뜻밖에도 친구가 먼저 손을 내밀었어요",
+          "바로 그 순간 둘은 화해했어요"
+        ],
+        사랑: [
+          "그런데 사실은 {주인공}이 표현하지 못했던 거예요",
+          "알고 보니 [협력자]도 같은 마음이었어요",
+          "뜻밖에도 작은 행동이 큰 사랑이었어요",
+          "바로 그때 {주인공}의 마음이 전해졌어요",
+          "순간 모두가 {주인공}의 사랑을 느꼈어요",
+          "진짜 사랑은 함께 있는 것이었어요",
+          "숨겨진 감정이 드러났어요",
+          "사실 [동물]가 그 마음을 알고 있었어요",
+          "그런데 {주인공}이 용기를 냈어요",
+          "알고 보니 사랑은 가까이에 있었어요",
+          "뜻밖에도 [협력자]가 기다리고 있었어요",
+          "바로 그 순간 마음이 통했어요"
+        ],
+        신남: [
+          "그런데 사실은 더 신나는 일이 기다리고 있었어요",
+          "알고 보니 [장소]에 축제가 열렸어요",
+          "뜻밖에도 {주인공}이 주인공이 되었어요",
+          "바로 그때 모두가 함께 춤을 췄어요",
+          "순간 [장소]가 파티장으로 변했어요",
+          "진짜 선물은 따로 있었어요",
+          "숨겨진 서프라이즈가 있었어요",
+          "사실 모두가 {주인공}을 위해 준비했어요",
+          "그런데 [마법물건]가 마법을 부렸어요",
+          "알고 보니 매일이 축제였어요",
+          "뜻밖에도 더 큰 놀이가 기다리고 있었어요",
+          "바로 그 순간 모두가 박수쳤어요"
+        ],
+        신비: [
+          "그런데 사실은 {주인공}이 꿈을 꾸고 있었어요",
+          "알고 보니 [마법물건]가 진짜 마법이었어요",
+          "뜻밖에도 {주인공}이 마법사였어요",
+          "바로 그때 시간이 거꾸로 흘렀어요",
+          "순간 [장소]의 모든 게 현실이 되었어요",
+          "진짜 정체는 [동물]가 요정이라는 거예요",
+          "숨겨진 힘이 깨어났어요",
+          "사실 모든 게 마법이었어요",
+          "그런데 [마법물건]가 말을 하기 시작했어요",
+          "알고 보니 {주인공}만 볼 수 있는 세계였어요",
+          "뜻밖에도 [장소]가 마법 왕국이었어요",
+          "바로 그 순간 모든 게 밝혀졌어요"
+        ]
+      },
+      solution: {
+        감동: [
+          "{주인공}이 [해결방법]",
+          "{주인공}이 다시 만나서 화해했어요",
+          "{주인공}이 [협력자]의 도움으로 [마법물건]를 찾았어요",
+          "[동물]가 {주인공}의 따뜻한 마음으로 건강해졌어요",
+          "{주인공}이 [감정] 끝까지 포기하지 않았어요",
+          "{주인공}이 [협력자]를 다시 만났어요",
+          "[동물]가 {주인공}를 기억해냈어요",
+          "{주인공}이 [장소]에서 소중한 것을 되찾았어요",
+          "{주인공}이 [협력자]와 감동적으로 재회했어요",
+          "{주인공}이 [장소]에서 진심을 전했어요",
+          "{주인공}이 [음식]를 함께 나누며 화해했어요",
+          "{주인공}이 [마법물건]로 [동물]를 치료했어요"
+        ],
+        웃음: [
+          "{주인공}이 [동물]의 도움으로 데굴데굴 굴러갔어요",
+          "{주인공}이 킥킥 웃으며 해결책을 찾았어요",
+          "{주인공}이 [마법물건]를 우연히 발견했어요",
+          "[동물]가 재미있는 방법으로 도와줬어요",
+          "{주인공}이 [음식]를 먹고 힘이 솟아났어요",
+          "{주인공}이 엉뚱한 방법으로 성공했어요",
+          "{주인공}이 [장소]에서 웃으며 일어났어요",
+          "[동물]와 {주인공}이 함께 웃었어요",
+          "{주인공}이 [장소]에서 우스꽝스럽게 문제를 풀었어요",
+          "{주인공}이 [동물]와 함께 장난치며 해결했어요",
+          "{주인공}이 실수가 해답이 되었어요",
+          "{주인공}이 [마법물건]로 모두를 웃게 했어요"
+        ],
+        긴장: [
+          "{주인공}이 [감정] 필사적으로 도망쳤어요",
+          "{주인공}이 힘을 합쳐 [동물]를 물리쳤어요",
+          "{주인공}이 [마법물건]의 힘으로 탈출했어요",
+          "{주인공}이 [장소]에서 숨어서 위기를 벗어났어요",
+          "[협력자]가 마지막 순간에 나타나 도와줬어요",
+          "{주인공}이 [장소]에서 출구를 찾아냈어요",
+          "{주인공}이 용기를 내서 맞섰어요",
+          "{주인공}이 [마법물건]로 위험을 막았어요",
+          "{주인공}이 [장소]에서 기적적으로 탈출했어요",
+          "{주인공}이 [동물]를 제압하고 안전해졌어요",
+          "{주인공}이 [협력자]와 함께 위기를 넘었어요",
+          "{주인공}이 침착하게 길을 찾았어요"
+        ],
+        모험: [
+          "{주인공}이 [마법물건]를 사용해서 문제를 해결했어요",
+          "{주인공}이 협력해서 장애물을 넘었어요",
+          "{주인공}이 [동물]와 친구가 되어 도움을 받았어요",
+          "{주인공}이 [장소]에서 지혜롭게 길을 찾았어요",
+          "[협력자]가 {주인공}에게 중요한 힌트를 줬어요",
+          "{주인공}이 [장소]에서 다리를 다시 만들었어요",
+          "{주인공}이 폭풍을 헤치고 앞으로 나아갔어요",
+          "{주인공}이 [마법물건]를 다시 찾아냈어요",
+          "{주인공}이 [장소]에서 새로운 길을 발견했어요",
+          "{주인공}이 [동물]의 안내로 목적지에 도착했어요",
+          "{주인공}이 [협력자]와 함께 보물을 찾았어요",
+          "{주인공}이 용감하게 앞으로 나아갔어요"
+        ],
+        성장: [
+          "{주인공}이 [해결방법]",
+          "{주인공}이 스스로 해낼 수 있었어요",
+          "{주인공}이 서로를 이해하게 되었어요",
+          "{주인공}이 [동물]를 돌보는 법을 배웠어요",
+          "{주인공}이 [장소]에서 용기있는 결정을 내렸어요",
+          "{주인공}이 실수에서 배웠어요",
+          "{주인공}이 [협력자]에게 다시 도전했어요",
+          "{주인공}이 [장소]에서 포기하지 않고 해냈어요",
+          "{주인공}이 [협력자]의 가르침을 기억했어요",
+          "{주인공}이 [장소]에서 성장한 모습을 보여줬어요",
+          "{주인공}이 [동물]를 책임지고 돌봤어요",
+          "{주인공}이 혼자서도 [음식]를 만들어냈어요"
+        ],
+        우정: [
+          "{주인공}이 진심으로 화해했어요",
+          "{주인공}이 친구에게 솔직하게 말했어요",
+          "[동물]가 {주인공}의 진심을 알고 다가왔어요",
+          "{주인공}이 친구의 마음을 이해하게 되었어요",
+          "{주인공}이 [장소]에서 친구들을 찾았어요",
+          "{주인공}이 친구에게 사과했어요",
+          "{주인공}이 [음식]를 함께 나눴어요",
+          "{주인공}이 친구의 비밀을 지켜줬어요",
+          "{주인공}이 [동물]와 다시 친구가 되었어요",
+          "{주인공}이 [장소]에서 우정을 되찾았어요",
+          "{주인공}이 [마법물건]를 찾아서 돌려줬어요",
+          "{주인공}이 약속을 지켰어요"
+        ],
+        사랑: [
+          "{주인공}이 가족에게 사랑한다고 말했어요",
+          "{주인공}이 친구를 따뜻하게 안아줬어요",
+          "{주인공}이 [협력자]에게 감사를 표현했어요",
+          "[동물]가 {주인공}의 사랑을 느끼고 돌아왔어요",
+          "{주인공}이 [음식]를 정성껏 만들어 함께 나눴어요",
+          "{주인공}이 [협력자]와 마음을 나눴어요",
+          "{주인공}이 [동물]를 보살펴줬어요",
+          "{주인공}이 [장소]에서 모두와 화해했어요",
+          "{주인공}이 [협력자]에게 진심을 전했어요",
+          "{주인공}이 [동물]를 끝까지 돌봐줬어요",
+          "{주인공}이 [마법물건]를 함께 사용했어요",
+          "{주인공}이 사랑으로 모두를 감싸줬어요"
+        ],
+        신남: [
+          "{주인공}이 [마법물건]를 다시 찾아서 기뻤어요",
+          "{주인공}이 신나게 문제를 해결했어요",
+          "{주인공}이 [동물]들과 즐거운 파티를 열었어요",
+          "{주인공}이 [음식]를 먹고 기운을 되찾았어요",
+          "{주인공}이 [장소]에서 모두와 춤을 췄어요",
+          "{주인공}이 [장소]를 깨끗이 정리했어요",
+          "{주인공}이 [마법물건]를 다시 손에 넣었어요",
+          "{주인공}이 일어나서 다시 뛰어다녔어요",
+          "{주인공}이 [장소]에서 축제를 열었어요",
+          "{주인공}이 [동물]들과 신나게 놀았어요",
+          "{주인공}이 모두에게 [음식]를 나눠줬어요",
+          "{주인공}이 [협력자]와 함께 즐거워했어요"
+        ],
+        신비: [
+          "{주인공}이 [마법물건]의 비밀을 풀었어요",
+          "{주인공}의 기억이 돌아왔어요",
+          "[동물]가 {주인공}에게 진실을 알려줬어요",
+          "{주인공}이 원래 세계로 돌아왔어요",
+          "[장소]가 다시 정상으로 돌아왔어요",
+          "{주인공}이 [마법물건]의 저주를 풀었어요",
+          "[장소]가 원래 모습을 되찾았어요",
+          "{주인공}이 자신의 모습으로 돌아왔어요",
+          "{주인공}이 [마법물건]의 힘을 사용했어요",
+          "{주인공}이 [장소]에서 시간을 되돌렸어요",
+          "{주인공}이 [동물]의 진실을 받아들였어요",
+          "{주인공}이 마법의 힘으로 모든 걸 바로잡았어요"
+        ]
+      },
+      lesson: {
+        감동: [
+          "{주인공}은 따뜻한 마음이 가장 중요하다는 걸 배웠어요",
+          "{주인공}은 [느낀감정]",
+          "{주인공}은 포기하지 않는 것의 소중함을 알게 되었어요",
+          "{주인공}은 사랑하는 사람들이 곁에 있어 행복했어요",
+          "{주인공}은 진심을 담아 노력하는 게 중요하다고 생각했어요",
+          "{주인공}은 다시 만날 수 있다는 희망을 가졌어요",
+          "{주인공}은 작은 것도 소중하다는 걸 알았어요",
+          "{주인공}은 함께 있는 시간이 가장 값지다고 느꼈어요",
+          "{주인공}은 인내심을 가지면 좋은 결과가 온다고 배웠어요",
+          "{주인공}은 마음을 전하는 게 중요하다고 알았어요",
+          "{주인공}은 사랑으로 모든 어려움을 이길 수 있다고 믿었어요",
+          "{주인공}은 진심은 언젠가 전해진다는 걸 배웠어요"
+        ],
+        웃음: [
+          "{주인공}은 웃음이 최고의 약이라는 걸 배웠어요",
+          "{주인공}은 실수해도 괜찮다는 걸 알게 되었어요",
+          "{주인공}은 [느낀감정]",
+          "{주인공}은 즐겁게 사는 것이 중요하다고 생각했어요",
+          "{주인공}은 엉뚱한 생각도 좋은 결과를 만든다는 걸 배웠어요",
+          "{주인공}은 웃으면 모든 게 좋아진다는 걸 알았어요",
+          "{주인공}은 재미있게 살기로 했어요",
+          "{주인공}은 실수도 즐거운 추억이 된다고 생각했어요",
+          "{주인공}은 유머가 어려움을 이긴다고 배웠어요",
+          "{주인공}은 웃음이 친구를 만든다는 걸 알았어요",
+          "{주인공}은 긍정적인 마음으로 모든 것을 대하기로 했어요",
+          "{주인공}은 매일 웃는 것이 건강의 비결이라고 배웠어요"
+        ],
+        긴장: [
+          "{주인공}은 용기를 내는 것이 중요하다는 걸 배웠어요",
+          "{주인공}은 겁내지 않고 맞서는 게 필요하다고 생각했어요",
+          "{주인공}은 [해결방법]",
+          "{주인공}은 위험할 때 침착함이 중요하다는 걸 알았어요",
+          "{주인공}은 도망치지 않고 해결하는 게 좋다고 배웠어요",
+          "{주인공}은 두려움을 이겨내는 법을 배웠어요",
+          "{주인공}은 위기를 기회로 만들 수 있다고 생각했어요",
+          "{주인공}은 침착하게 생각하면 길이 보인다는 걸 알았어요",
+          "{주인공}은 위험에서도 희망을 잃지 말아야 한다고 배웠어요",
+          "{주인공}은 용감함이 두려움을 이긴다고 느꼈어요",
+          "{주인공}은 위기 상황에서 차분함이 가장 중요하다고 배웠어요",
+          "{주인공}은 포기하지 않으면 길이 열린다는 걸 알았어요"
+        ],
+        모험: [
+          "{주인공}은 도전하는 것이 즐겁다는 걸 배웠어요",
+          "{주인공}은 새로운 것을 탐험하는 게 신나다고 느꼈어요",
+          "{주인공}은 [해결방법]",
+          "{주인공}은 함께하면 더 멀리 갈 수 있다는 걸 알았어요",
+          "{주인공}은 [느낀감정]",
+          "{주인공}은 모험이 인생을 풍요롭게 한다고 배웠어요",
+          "{주인공}은 길을 잃어도 새로운 길을 찾을 수 있다고 생각했어요",
+          "{주인공}은 탐험하는 마음을 잃지 않기로 했어요",
+          "{주인공}은 모험은 성장의 기회라는 걸 배웠어요",
+          "{주인공}은 새로운 세계를 만나는 게 즐겁다고 느꼈어요",
+          "{주인공}은 도전하지 않으면 얻을 수 없다는 걸 알았어요",
+          "{주인공}은 모험을 통해 세상을 배운다고 생각했어요"
+        ],
+        성장: [
+          "{주인공}은 스스로 해낼 수 있다는 걸 배웠어요",
+          "{주인공}은 노력하면 성장한다는 걸 알게 되었어요",
+          "{주인공}은 [해결방법]",
+          "{주인공}은 실패해도 다시 도전하는 게 중요하다고 생각했어요",
+          "{주인공}은 [느낀감정]",
+          "{주인공}은 한 걸음씩 나아가면 된다는 걸 배웠어요",
+          "{주인공}은 실수가 성장의 기회라는 걸 알았어요",
+          "{주인공}은 스스로를 믿는 게 중요하다고 느꼈어요",
+          "{주인공}은 포기하지 않으면 반드시 이룬다고 배웠어요",
+          "{주인공}은 노력의 가치를 깨달았어요",
+          "{주인공}은 매일 조금씩 성장하는 게 중요하다고 생각했어요",
+          "{주인공}은 자신을 믿으면 무엇이든 할 수 있다고 배웠어요"
+        ],
+        우정: [
+          "{주인공}은 친구가 소중하다는 걸 배웠어요",
+          "{주인공}은 진심으로 대하면 친구가 된다는 걸 알았어요",
+          "{주인공}은 [해결방법]",
+          "{주인공}은 함께하면 더 행복하다는 걸 느꼈어요",
+          "{주인공}은 [느낀감정]",
+          "{주인공}은 친구의 마음을 이해하는 게 중요하다고 배웠어요",
+          "{주인공}은 서로 돕는 게 진정한 우정이라고 생각했어요",
+          "{주인공}은 친구가 있어 외롭지 않다고 느꼈어요",
+          "{주인공}은 우정은 보물이라는 걸 알았어요",
+          "{주인공}은 친구와 함께하면 모든 게 즐겁다고 배웠어요",
+          "{주인공}은 진짜 친구는 어려울 때 함께한다는 걸 알았어요",
+          "{주인공}은 우정은 서로를 아끼는 마음에서 시작된다고 배웠어요"
+        ],
+        사랑: [
+          "{주인공}은 사랑이 가장 중요하다는 걸 배웠어요",
+          "{주인공}은 가족이 최고의 보물이라는 걸 알았어요",
+          "{주인공}은 [느낀감정]",
+          "{주인공}은 감사하는 마음을 표현하는 게 좋다고 배웠어요",
+          "{주인공}은 따뜻한 말 한마디가 힘이 된다는 걸 알았어요",
+          "{주인공}은 사랑은 행동으로 보여주는 거라고 배웠어요",
+          "{주인공}은 서로를 아끼는 게 행복이라고 생각했어요",
+          "{주인공}은 작은 배려가 큰 사랑이 된다는 걸 알았어요",
+          "{주인공}은 사랑하는 사람들과 함께가 최고라고 느꼈어요",
+          "{주인공}은 진심이 통한다는 걸 배웠어요",
+          "{주인공}은 사랑을 표현하는 것이 중요하다고 알았어요",
+          "{주인공}은 가족의 소중함을 새삼 느꼈어요"
+        ],
+        신남: [
+          "{주인공}은 즐겁게 사는 것이 최고라는 걸 배웠어요",
+          "{주인공}은 [느낀감정]",
+          "{주인공}은 신나는 일을 많이 하고 싶어졌어요",
+          "{주인공}은 행복을 나누면 더 커진다는 걸 알았어요",
+          "{주인공}은 긍정적인 마음이 중요하다고 생각했어요",
+          "{주인공}은 매일 즐거운 일을 찾기로 했어요",
+          "{주인공}은 기쁨을 나누면 배가 된다는 걸 배웠어요",
+          "{주인공}은 웃는 얼굴이 세상을 밝게 한다고 느꼈어요",
+          "{주인공}은 즐거움이 힘을 준다는 걸 알았어요",
+          "{주인공}은 매일을 즐겁게 살기로 했어요",
+          "{주인공}은 신나는 마음이 에너지를 만든다고 배웠어요",
+          "{주인공}은 행복은 마음먹기에 달렸다고 생각했어요"
+        ],
+        신비: [
+          "{주인공}은 세상에는 신비한 일이 많다는 걸 배웠어요",
+          "{주인공}은 호기심을 가지는 게 중요하다고 생각했어요",
+          "{주인공}은 [해결방법]",
+          "{주인공}은 보이는 게 전부가 아니라는 걸 알았어요",
+          "{주인공}은 신비로운 경험을 소중히 여기게 되었어요",
+          "{주인공}은 믿기 어려운 일도 일어날 수 있다고 배웠어요",
+          "{주인공}은 상상력이 현실을 만든다고 생각했어요",
+          "{주인공}은 마법 같은 순간을 기억하기로 했어요",
+          "{주인공}은 신비로움을 두려워하지 않게 되었어요",
+          "{주인공}은 세상은 놀라움으로 가득하다고 느꼈어요",
+          "{주인공}은 마법은 믿는 마음에서 시작된다고 배웠어요",
+          "{주인공}은 신비한 경험이 인생을 풍요롭게 한다고 알았어요"
+        ]
+      }
+    };
+
+    let createdCharacters = [];
+    let allStories = [];
+    let currentStoryId = 0;
+    let nextStoryId = 1;
+    let draggedElement = null;
+    let currentEditingIndex = -1;
+    let currentEditingStoryId = -1;
+    let characterSlotCounter = 0;
+    let lastDragWasFromPanel = false;
+    
+    // 자동 저장 기능
+    function saveToLocalStorage() {
+      const saveData = {
+        characters: createdCharacters,
+        stories: allStories,
+        nextStoryId: nextStoryId
+      };
+      try {
+        localStorage.setItem('fairyTaleMaker_autoSave', JSON.stringify(saveData));
+        console.log('✅ 자동 저장 완료!');
+      } catch (e) {
+        console.error('저장 실패:', e);
+      }
+    }
+    
+    function loadFromLocalStorage() {
+      try {
+        const saved = localStorage.getItem('fairyTaleMaker_autoSave');
+        if (saved) {
+          const saveData = JSON.parse(saved);
+          createdCharacters = saveData.characters || [];
+          allStories = saveData.stories || [];
+          nextStoryId = saveData.nextStoryId || 1;
+          
+          // 불러온 데이터로 화면 업데이트
+          updateCharactersList();
+          
+          // 기존 스토리 컨테이너 제거
+          const canvasContent = document.getElementById('canvas-content');
+          canvasContent.innerHTML = '';
+          
+          // 저장된 스토리들 복원
+          if (allStories.length > 0) {
+            allStories.forEach(story => {
+              const storyContainer = document.createElement('div');
+              storyContainer.className = 'story-container';
+              storyContainer.dataset.storyId = story.id;
+              
+              storyContainer.innerHTML = `
+                <div class="story-header">
+                  <h3 class="story-title-input" contenteditable="true">나의 동화 #${story.id + 1}</h3>
+                  <div class="story-controls">
+                    <button class="run-single-btn" data-story-id="${story.id}">▶️</button>
+                    <button class="delete-story-btn" data-story-id="${story.id}">🗑️</button>
+                  </div>
+                </div>
+                <div class="drop-zone" data-story-id="${story.id}">
+                  여기에 블록을 끌어다 놓으면<br>
+                  멋진 동화가 완성돼요! 📖✨
+                </div>
+              `;
+              
+              canvasContent.appendChild(storyContainer);
+              
+              // 블록 복원
+              if (story.blocks && story.blocks.length > 0) {
+                rebuildStoryBlocks(story.id);
+              }
+            });
+            
+            showNotice('💾 이전 작업을 불러왔어요!', '#4cd964');
+          } else {
+            // 저장된 스토리가 없으면 기본 스토리 추가
+            allStories.push({ id: 0, blocks: [] });
+            const storyContainer = document.createElement('div');
+            storyContainer.className = 'story-container';
+            storyContainer.dataset.storyId = 0;
+            
+            storyContainer.innerHTML = `
+              <div class="story-header">
+                <h3 class="story-title-input" contenteditable="true">나의 첫 번째 동화</h3>
+                <div class="story-controls">
+                  <button class="run-single-btn" data-story-id="0">▶️</button>
+                  <button class="delete-story-btn" data-story-id="0">🗑️</button>
+                </div>
+              </div>
+              <div class="drop-zone" data-story-id="0">
+                여기에 블록을 끌어다 놓으면<br>
+                멋진 동화가 완성돼요! 📖✨
+              </div>
+            `;
+            
+            canvasContent.appendChild(storyContainer);
+          }
+          
+          return true;
+        }
+      } catch (e) {
+        console.error('불러오기 실패:', e);
+      }
+      return false;
+    }
+
+    function extractDropdownKeys(text) {
+      const regex = /\[([^\]]+)\]/g;
+      const keys = [];
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        const key = match[1];
+        if (dropdownOptions[key] && !keys.includes(key)) {
+          keys.push(key);
+        }
+      }
+      return keys;
+    }
+
+    function toggleCategory(categoryName) {
+      const title = document.querySelector(`[data-category="${categoryName}"]`);
+      const content = document.getElementById(`${categoryName}-content`);
+      
+      if (content.classList.contains('active')) {
+        content.classList.remove('active');
+        title.classList.remove('active');
+      } else {
+        content.classList.add('active');
+        title.classList.add('active');
+      }
+    }
+
+    function toggleMood(categoryName, moodName) {
+      const tab = document.querySelector(`[data-mood="${categoryName}-${moodName}"]`);
+      const blocks = document.getElementById(`${categoryName}-${moodName}-blocks`);
+      
+      if (blocks.classList.contains('active')) {
+        blocks.classList.remove('active');
+        tab.classList.remove('active');
+      } else {
+        document.querySelectorAll(`#${categoryName}-content .mood-tab`).forEach(t => t.classList.remove('active'));
+        document.querySelectorAll(`#${categoryName}-content .mood-blocks`).forEach(b => b.classList.remove('active'));
+        
+        blocks.classList.add('active');
+        tab.classList.add('active');
+      }
+    }
+
+    function addCharacter() {
+      const nameInput = document.getElementById('character-name');
+      const descInput = document.getElementById('character-description');
+      const name = nameInput.value.trim();
+      const description = descInput.value.trim();
+      
+      if (!name) {
+        showNotice('인물 이름을 입력해주세요!', '#ff3b30');
+        return;
+      }
+      
+      const character = {
+        name: name,
+        description: description || '특별한 인물'
+      };
+      
+      createdCharacters.push(character);
+      updateCharactersList();
+      
+      nameInput.value = '';
+      descInput.value = '';
+      
+      saveToLocalStorage(); // 자동 저장
+    }
+
+    function updateCharactersList() {
+      const container = document.getElementById('created-characters');
+      container.innerHTML = '';
+      
+      if (createdCharacters.length > 0) {
+        const title = document.createElement('div');
+        title.style.fontSize = '13px';
+        title.style.fontWeight = 'bold';
+        title.style.color = '#6b4423';
+        title.style.marginTop = '12px';
+        title.style.marginBottom = '8px';
+        title.textContent = '✨ 만들어진 인물들';
+        container.appendChild(title);
+        
+        createdCharacters.forEach((char, index) => {
+          const item = document.createElement('div');
+          item.className = 'character-item';
+          item.innerHTML = `
+            <strong>${char.name}</strong><br>
+            <span style="font-size: 11px;">${char.description}</span>
+            <button class="delete-char" data-char-index="${index}">×</button>
+          `;
+          container.appendChild(item);
+        });
+      }
+    }
+
+    function removeCharacter(index) {
+      createdCharacters.splice(index, 1);
+      updateCharactersList();
+      saveToLocalStorage(); // 자동 저장
+    }
+    
+    function addFreeBlock() {
+      const input = document.getElementById('free-block-input');
+      const text = input.value.trim();
+      
+      if (!text) {
+        showNotice('문장을 입력해주세요!', '#ff3b30');
+        return;
+      }
+      
+      const freeBlocksContainer = document.getElementById('free-blocks');
+      
+      const block = document.createElement('div');
+      block.className = 'block-item';
+      block.textContent = text;
+      block.draggable = true;
+      block.dataset.category = 'free';
+      block.dataset.text = text;
+      block.dataset.moodColor = 'linear-gradient(135deg, #a29bfe 0%, #74b9ff 100%)';
+      block.dataset.borderColor = '#a29bfe';
+      block.style.background = 'linear-gradient(135deg, #a29bfe 0%, #74b9ff 100%)';
+      block.style.border = '2px solid #a29bfe';
+      
+      block.addEventListener('dragstart', (e) => {
+        lastDragWasFromPanel = true;
+        draggedElement = {
+          category: 'free',
+          text: text,
+          dropdownKeys: [],
+          moodColor: 'linear-gradient(135deg, #a29bfe 0%, #74b9ff 100%)',
+          borderColor: '#a29bfe',
+          isFreeBlock: true
+        };
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      
+      block.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        lastDragWasFromPanel = true;
+        draggedElement = {
+          category: 'free',
+          text: text,
+          dropdownKeys: [],
+          moodColor: 'linear-gradient(135deg, #a29bfe 0%, #74b9ff 100%)',
+          borderColor: '#a29bfe',
+          isFreeBlock: true
+        };
+      }, { passive: false });
+      
+      freeBlocksContainer.appendChild(block);
+      
+      input.value = '';
+      
+      showNotice('✅ 자유블록이 만들어졌어요!', '#4cd964');
+    }
+
+    function showNotice(message, color) {
+      const notice = document.createElement('div');
+      notice.textContent = message;
+      notice.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: ${color}; color: white; padding: 15px 30px; border-radius: 10px; z-index: 9999; font-weight: bold;`;
+      document.body.appendChild(notice);
+      setTimeout(() => notice.remove(), 1500);
+    }
+
+    function initializeBlocks() {
+      const categories = ['start', 'problem', 'reversal', 'solution', 'lesson'];
+      
+      categories.forEach(category => {
+        const tabsContainer = document.getElementById(`${category}-tabs`);
+        const blocksContainer = document.getElementById(`${category}-blocks`);
+        
+        Object.keys(moods).forEach(moodKey => {
+          const mood = moods[moodKey];
+          
+          const tab = document.createElement('div');
+          tab.className = 'mood-tab';
+          tab.textContent = mood.name;
+          tab.style.background = mood.color;
+          tab.style.color = 'white';
+          tab.style.borderColor = 'transparent';
+          tab.dataset.mood = `${category}-${moodKey}`;
+          tab.onclick = () => toggleMood(category, moodKey);
+          tabsContainer.appendChild(tab);
+          
+          const moodBlocksContainer = document.createElement('div');
+          moodBlocksContainer.className = 'mood-blocks';
+          moodBlocksContainer.id = `${category}-${moodKey}-blocks`;
+          
+          if (storyData[category][moodKey]) {
+            storyData[category][moodKey].forEach((text, index) => {
+              const block = document.createElement('div');
+              block.className = 'block-item';
+              block.textContent = text;
+              block.draggable = true;
+              block.dataset.category = category;
+              block.dataset.mood = moodKey;
+              block.dataset.index = index;
+              block.dataset.text = text;
+              block.dataset.moodColor = mood.color;
+              block.dataset.borderColor = mood.borderColor;
+              block.style.background = mood.color;
+              block.style.color = 'white';
+              block.style.border = `2px solid ${mood.borderColor}`;
+              
+              block.addEventListener('dragstart', (e) => {
+                lastDragWasFromPanel = true;
+                const keys = extractDropdownKeys(text);
+                
+                draggedElement = {
+                  category: category,
+                  mood: moodKey,
+                  index: index,
+                  text: text,
+                  dropdownKeys: keys,
+                  moodColor: mood.color,
+                  borderColor: mood.borderColor
+                };
+                e.dataTransfer.effectAllowed = 'copy';
+              });
+              
+              block.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                lastDragWasFromPanel = true;
+                const keys = extractDropdownKeys(text);
+                
+                draggedElement = {
+                  category: category,
+                  mood: moodKey,
+                  index: index,
+                  text: text,
+                  dropdownKeys: keys,
+                  moodColor: mood.color,
+                  borderColor: mood.borderColor
+                };
+              }, { passive: false });
+              
+              moodBlocksContainer.appendChild(block);
+            });
+          }
+          
+          blocksContainer.appendChild(moodBlocksContainer);
+        });
+      });
+    }
+
+    function setupDropZone() {
+      let touchStartY = 0;
+      let touchStartX = 0;
+      let isDragging = false;
+      let touchGhostElement = null; // 터치 시 따라다니는 요소
+      
+      // 터치 이동 핸들러
+      function handleTouchMove(e) {
+        if (!isDragging || !draggedElement || !lastDragWasFromPanel) return;
+        
+        e.preventDefault();
+        const touch = e.touches[0];
+        
+        // 고스트 요소 위치 업데이트
+        if (touchGhostElement) {
+          touchGhostElement.style.left = (touch.clientX - touchGhostElement.offsetWidth / 2) + 'px';
+          touchGhostElement.style.top = (touch.clientY - touchGhostElement.offsetHeight / 2) + 'px';
+        }
+        
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+          zone.classList.remove('drag-over');
+        });
+        
+        const dropZone = element?.closest('.drop-zone');
+        if (dropZone) {
+          dropZone.classList.add('drag-over');
+        }
+      }
+      
+      // 터치 종료 핸들러
+      function handleTouchEnd(e) {
+        if (!isDragging || !draggedElement || !lastDragWasFromPanel) return;
+        
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const dropZone = element?.closest('.drop-zone');
+        
+        if (dropZone) {
+          const storyId = parseInt(dropZone.dataset.storyId);
+          addBlockToCanvas(draggedElement, storyId);
+        }
+        
+        // 고스트 요소 제거
+        if (touchGhostElement) {
+          touchGhostElement.remove();
+          touchGhostElement = null;
+        }
+        
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+          zone.classList.remove('drag-over');
+        });
+        
+        isDragging = false;
+        draggedElement = null;
+        lastDragWasFromPanel = false;
+      }
+      
+      // 터치 시작을 위한 전역 리스너
+      document.addEventListener('touchstart', (e) => {
+        const blockItem = e.target.closest('.block-item');
+        if (blockItem && blockItem.closest('.blocks-panel')) {
+          isDragging = true;
+          const touch = e.touches[0];
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+          
+          // 고스트 요소 생성
+          touchGhostElement = blockItem.cloneNode(true);
+          touchGhostElement.classList.add('touch-drag-ghost');
+          touchGhostElement.style.width = blockItem.offsetWidth + 'px';
+          touchGhostElement.style.left = (touch.clientX - blockItem.offsetWidth / 2) + 'px';
+          touchGhostElement.style.top = (touch.clientY - blockItem.offsetHeight / 2) + 'px';
+          document.body.appendChild(touchGhostElement);
+        }
+      }, { passive: false });
+      
+      // 기존 마우스 이벤트
+      document.addEventListener('dragover', (e) => {
+        const canvasArea = e.target.closest('.canvas-area');
+        const dropZone = e.target.closest('.drop-zone');
+        
+        if (canvasArea && draggedElement && lastDragWasFromPanel) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          
+          if (dropZone) {
+            dropZone.classList.add('drag-over');
+          }
+        }
+      });
+      
+      document.addEventListener('dragleave', (e) => {
+        const dropZone = e.target.closest('.drop-zone');
+        if (dropZone && !dropZone.contains(e.relatedTarget)) {
+          dropZone.classList.remove('drag-over');
+        }
+      });
+      
+      document.addEventListener('drop', (e) => {
+        const canvasArea = e.target.closest('.canvas-area');
+        
+        if (canvasArea && draggedElement && lastDragWasFromPanel) {
+          e.preventDefault();
+          
+          let targetDropZone = e.target.closest('.drop-zone');
+          
+          if (!targetDropZone) {
+            targetDropZone = canvasArea.querySelector('.drop-zone');
+          }
+          
+          if (targetDropZone) {
+            targetDropZone.classList.remove('drag-over');
+            const storyId = parseInt(targetDropZone.dataset.storyId);
+            addBlockToCanvas(draggedElement, storyId);
+          }
+          
+          draggedElement = null;
+          lastDragWasFromPanel = false;
+        }
+      });
+      
+      // 터치 이벤트 전역 리스너
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
+
+    function addBlockToCanvas(blockData, storyId) {
+      const dropZone = document.querySelector(`[data-story-id="${storyId}"].drop-zone`);
+      if (!dropZone) return;
+      
+      let story = allStories.find(s => s.id === storyId);
+      if (!story) {
+        story = { id: storyId, blocks: [] };
+        allStories.push(story);
+      }
+      
+      if (!dropZone.classList.contains('has-blocks')) {
+        dropZone.classList.add('has-blocks');
+        dropZone.innerHTML = '';
+      }
+      
+      const extractedKeys = extractDropdownKeys(blockData.text);
+      
+      const dropdownSelections = {};
+      extractedKeys.forEach(key => {
+        dropdownSelections[key] = 0;
+      });
+      
+      const newBlock = {
+        ...blockData,
+        id: Date.now() + Math.random(),
+        customText: blockData.text,
+        characters: [],
+        dropdownSelections: dropdownSelections,
+        dropdownKeys: extractedKeys,
+        moodColor: blockData.moodColor || 'linear-gradient(135deg, #ff9a56 0%, #ff6b9d 100%)',
+        borderColor: blockData.borderColor || '#ff9a56',
+        isFreeBlock: blockData.isFreeBlock || false
+      };
+      
+      story.blocks.push(newBlock);
+      rebuildStoryBlocks(storyId);
+      saveToLocalStorage(); // 자동 저장
+    }
+
+    function rebuildStoryBlocks(storyId) {
+      const dropZone = document.querySelector(`[data-story-id="${storyId}"].drop-zone`);
+      const story = allStories.find(s => s.id === storyId);
+      
+      if (!dropZone || !story) return;
+      
+      dropZone.innerHTML = '';
+      
+      story.blocks.forEach((block, index) => {
+        let displayText = getFinalBlockText(block, true);
+        
+        const moodColor = block.moodColor || 'linear-gradient(135deg, #ff9a56 0%, #ff6b9d 100%)';
+        const borderColor = block.borderColor || '#ff9a56';
+        
+        const blockElement = document.createElement('div');
+        blockElement.className = 'dropped-block';
+        blockElement.draggable = true;
+        blockElement.style.background = moodColor;
+        blockElement.style.border = `3px solid ${borderColor}`;
+        
+        let categoryLabel = '';
+        if (block.isFreeBlock) {
+          categoryLabel = '✍️ 자유';
+        } else if (block.category && block.mood) {
+          categoryLabel = `${getCategoryLabel(block.category)} ${moods[block.mood].emoji}`;
+        }
+        
+        blockElement.innerHTML = `
+          <div class="block-category-label">${categoryLabel}</div>
+          <div class="block-content">${displayText}</div>
+          <div class="block-controls">
+            <button class="edit-btn" data-block-index="${index}" data-story-id="${storyId}">✏️</button>
+            <button class="delete-btn" data-block-index="${index}" data-story-id="${storyId}">×</button>
+          </div>
+        `;
+        
+        blockElement.addEventListener('dragstart', (e) => {
+          lastDragWasFromPanel = false;
+          draggedElement = {
+            fromCanvas: true,
+            storyId: storyId,
+            blockIndex: index,
+            blockData: block
+          };
+          e.dataTransfer.effectAllowed = 'move';
+          blockElement.classList.add('dragging');
+        });
+        
+        blockElement.addEventListener('dragend', (e) => {
+          blockElement.classList.remove('dragging');
+          document.querySelectorAll('.dropped-block').forEach(b => {
+            b.classList.remove('drag-over-top', 'drag-over-bottom');
+          });
+        });
+        
+        blockElement.addEventListener('dragover', (e) => {
+          if (draggedElement && draggedElement.fromCanvas) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const rect = blockElement.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            
+            blockElement.classList.remove('drag-over-top', 'drag-over-bottom');
+            if (e.clientY < midpoint) {
+              blockElement.classList.add('drag-over-top');
+            } else {
+              blockElement.classList.add('drag-over-bottom');
+            }
+          }
+        });
+        
+        blockElement.addEventListener('dragleave', (e) => {
+          if (!blockElement.contains(e.relatedTarget)) {
+            blockElement.classList.remove('drag-over-top', 'drag-over-bottom');
+          }
+        });
+        
+        blockElement.addEventListener('drop', (e) => {
+          if (draggedElement && draggedElement.fromCanvas) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const rect = blockElement.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            const dropBefore = e.clientY < midpoint;
+            
+            reorderBlocks(draggedElement.storyId, draggedElement.blockIndex, storyId, index, dropBefore);
+            
+            blockElement.classList.remove('drag-over-top', 'drag-over-bottom');
+            draggedElement = null;
+          }
+        });
+        
+        if (index > 0) {
+          const connectionLine = document.createElement('div');
+          connectionLine.className = 'connection-line';
+          dropZone.appendChild(connectionLine);
+        }
+        
+        dropZone.appendChild(blockElement);
+      });
+    }
+
+    function getCategoryLabel(category) {
+      const labels = {
+        start: '🌱 시작',
+        problem: '⚠️ 문제',
+        reversal: '🎪 반전',
+        solution: '✨ 해결',
+        lesson: '💡 교훈'
+      };
+      return labels[category] || '📝 블록';
+    }
+
+    function addNewStory() {
+      const canvasContent = document.getElementById('canvas-content');
+      
+      const storyContainer = document.createElement('div');
+      storyContainer.className = 'story-container';
+      storyContainer.dataset.storyId = nextStoryId;
+      
+      storyContainer.innerHTML = `
+        <div class="story-header">
+          <h3 class="story-title-input" contenteditable="true">나의 동화 #${nextStoryId + 1}</h3>
+          <div class="story-controls">
+            <button class="run-single-btn" data-story-id="${nextStoryId}">▶️</button>
+            <button class="delete-story-btn" data-story-id="${nextStoryId}">🗑️</button>
+          </div>
+        </div>
+        <div class="drop-zone" data-story-id="${nextStoryId}">
+          여기에 블록을 끌어다 놓으면<br>
+          멋진 동화가 완성돼요! 📖✨
+        </div>
+      `;
+      
+      canvasContent.appendChild(storyContainer);
+      nextStoryId++;
+    }
+
+    function deleteStory(storyId) {
+      if (document.querySelectorAll('.story-container').length <= 1) {
+        showNotice('최소 하나의 이야기는 있어야 해요!', '#ff3b30');
+        return;
+      }
+      
+      const storyContainer = document.querySelector(`[data-story-id="${storyId}"].story-container`);
+      if (storyContainer) {
+        storyContainer.remove();
+        allStories = allStories.filter(story => story.id !== storyId);
+      }
+    }
+
+    function reorderBlocks(fromStoryId, fromIndex, toStoryId, toIndex, dropBefore) {
+      const fromStory = allStories.find(s => s.id === fromStoryId);
+      const toStory = allStories.find(s => s.id === toStoryId);
+      
+      if (!fromStory || !toStory) return;
+      
+      const [movedBlock] = fromStory.blocks.splice(fromIndex, 1);
+      
+      if (fromStoryId === toStoryId) {
+        if (fromIndex < toIndex) {
+          toIndex--;
+        }
+      }
+      
+      const insertIndex = dropBefore ? toIndex : toIndex + 1;
+      toStory.blocks.splice(insertIndex, 0, movedBlock);
+      
+      if (fromStoryId === toStoryId) {
+        rebuildStoryBlocks(fromStoryId);
+      } else {
+        rebuildStoryBlocks(fromStoryId);
+        rebuildStoryBlocks(toStoryId);
+      }
+    }
+    
+    function removeBlock(storyId, blockIndex) {
+      const story = allStories.find(s => s.id === storyId);
+      if (!story) return;
+      
+      story.blocks.splice(blockIndex, 1);
+      
+      rebuildStoryBlocks(storyId);
+      
+      const dropZone = document.querySelector(`[data-story-id="${storyId}"].drop-zone`);
+      if (story.blocks.length === 0 && dropZone) {
+        dropZone.classList.remove('has-blocks');
+        dropZone.innerHTML = '여기에 블록을 끌어다 놓으면<br>멋진 동화가 완성돼요! 📖✨';
+      }
+      
+      saveToLocalStorage(); // 자동 저장
+    }
+
+    function runAllStories() {
+      const storyContent = document.getElementById('story-content');
+      
+      if (allStories.length === 0 || allStories.every(story => !story.blocks || story.blocks.length === 0)) {
+        storyContent.innerHTML = `
+          <div style="color: #ff3b30; font-weight: bold; text-align: center;">
+            ⚠️ 이야기 블록을 추가해주세요!
+          </div>
+        `;
+        storyContent.className = 'story-content empty';
+        return;
+      }
+      
+      storyContent.className = 'story-content';
+      
+      let allStoriesText = '';
+      
+      if (createdCharacters.length > 0) {
+        allStoriesText += '<h3 style="color: #ff9a56; border-bottom: 2px solid #ffd699; padding-bottom: 8px;">🎭 등장인물</h3>';
+        createdCharacters.forEach(char => {
+          allStoriesText += `<p style="text-indent: 0;"><strong style="color: #ff6b9d;">${char.name}</strong>: ${char.description}</p>`;
+        });
+        allStoriesText += '<hr style="margin: 20px 0; border: 2px solid #ffd699;">';
+      }
+      
+      allStories.forEach((story, storyIndex) => {
+        if (!story.blocks || story.blocks.length === 0) return;
+        
+        const storyContainer = document.querySelector(`[data-story-id="${story.id}"].story-container`);
+        const storyTitle = storyContainer ? storyContainer.querySelector('.story-title-input').textContent : `동화 #${storyIndex + 1}`;
+        
+        allStoriesText += `<h3 style="color: #ff9a56; border-bottom: 2px solid #ffd699; padding-bottom: 8px;">📖 ${storyTitle}</h3>`;
+        
+        story.blocks.forEach(block => {
+          let finalText = getFinalBlockText(block);
+          allStoriesText += `<p>${finalText}</p>`;
+        });
+        
+        allStoriesText += '<hr style="margin: 20px 0; border: 2px solid #ffd699;">';
+      });
+      
+      storyContent.innerHTML = allStoriesText;
+    }
+
+    function runSingleStory(storyId) {
+      const story = allStories.find(s => s.id === storyId);
+      const storyContent = document.getElementById('story-content');
+      
+      if (!story || !story.blocks || story.blocks.length === 0) {
+        storyContent.innerHTML = `
+          <div style="color: #ff3b30; font-weight: bold; text-align: center;">
+            ⚠️ 이 이야기에 블록을 추가해주세요!
+          </div>
+        `;
+        storyContent.className = 'story-content empty';
+        return;
+      }
+      
+      storyContent.className = 'story-content';
+      
+      let storyText = '';
+      
+      if (createdCharacters.length > 0) {
+        storyText += '<h3 style="color: #ff9a56; border-bottom: 2px solid #ffd699; padding-bottom: 8px;">🎭 등장인물</h3>';
+        createdCharacters.forEach(char => {
+          storyText += `<p style="text-indent: 0;"><strong style="color: #ff6b9d;">${char.name}</strong>: ${char.description}</p>`;
+        });
+        storyText += '<hr style="margin: 20px 0; border: 2px solid #ffd699;">';
+      }
+      
+      const storyContainer = document.querySelector(`[data-story-id="${storyId}"].story-container`);
+      const storyTitle = storyContainer ? storyContainer.querySelector('.story-title-input').textContent : `동화 #${storyId + 1}`;
+      
+      storyText += `<h3 style="color: #ff9a56; border-bottom: 2px solid #ffd699; padding-bottom: 8px;">📖 ${storyTitle}</h3>`;
+      
+      story.blocks.forEach(block => {
+        let finalText = getFinalBlockText(block);
+        storyText += `<p>${finalText}</p>`;
+      });
+      
+      storyContent.innerHTML = storyText;
+    }
+
+    function getJosa(name, josaType) {
+      const lastChar = name.charAt(name.length - 1);
+      const lastCharCode = lastChar.charCodeAt(0);
+      
+      // 한글인 경우
+      if (lastCharCode >= 0xAC00 && lastCharCode <= 0xD7A3) {
+        const hasJongseong = (lastCharCode - 0xAC00) % 28 !== 0;
+        
+        if (josaType === '은는') {
+          return hasJongseong ? '은' : '는';
+        } else if (josaType === '이가') {
+          return hasJongseong ? '이' : '가';
+        } else if (josaType === '을를') {
+          return hasJongseong ? '을' : '를';
+        } else if (josaType === '과와') {
+          return hasJongseong ? '과' : '와';
+        }
+      }
+      
+      // 영어나 숫자로 끝나는 경우
+      if (/[a-zA-Z]/.test(lastChar)) {
+        // 영어는 받침 없는 것처럼 처리
+        if (josaType === '은는') return '는';
+        if (josaType === '이가') return '가';
+        if (josaType === '을를') return '를';
+        if (josaType === '과와') return '와';
+      }
+      
+      if (/[0-9]/.test(lastChar)) {
+        // 숫자 받침 판단: 0,1,3,6,7,8은 받침 있음
+        const hasJongseong = ['0','1','3','6','7','8'].includes(lastChar);
+        if (josaType === '은는') return hasJongseong ? '은' : '는';
+        if (josaType === '이가') return hasJongseong ? '이' : '가';
+        if (josaType === '을를') return hasJongseong ? '을' : '를';
+        if (josaType === '과와') return hasJongseong ? '과' : '와';
+      }
+      
+      // 알 수 없는 경우 (둘 다 표시)
+      if (josaType === '은는') return '은(는)';
+      if (josaType === '이가') return '이(가)';
+      if (josaType === '을를') return '을(를)';
+      if (josaType === '과와') return '과(와)';
+      return '';
+    }
+
+    function getFinalBlockText(block, forDisplay = false) {
+      let text = block.customText;
+      
+      if (block.isFreeBlock) {
+        return text;
+      }
+      
+      // 먼저 원본 텍스트의 조사 패턴을 통일된 형식으로 변환
+      text = text.replace(/{주인공}이([^(])/g, '{주인공}이(가)$1');
+      text = text.replace(/{주인공}가([^(])/g, '{주인공}이(가)$1');
+      text = text.replace(/{주인공}은([^(])/g, '{주인공}은(는)$1');
+      text = text.replace(/{주인공}는([^(])/g, '{주인공}은(는)$1');
+      text = text.replace(/{주인공}을([^(])/g, '{주인공}을(를)$1');
+      text = text.replace(/{주인공}를([^(])/g, '{주인공}을(를)$1');
+      text = text.replace(/{주인공}과([^(])/g, '{주인공}과(와)$1');
+      text = text.replace(/{주인공}와([^(])/g, '{주인공}과(와)$1');
+      
+      // 인물 치환
+      if (block.characters && block.characters.length > 0) {
+        if (block.characters[0] !== undefined && createdCharacters[block.characters[0]]) {
+          const name = createdCharacters[block.characters[0]].name;
+          text = text.replace(/{주인공}은\(는\)/g, name + '은(는)');
+          text = text.replace(/{주인공}이\(가\)/g, name + '이(가)');
+          text = text.replace(/{주인공}을\(를\)/g, name + '을(를)');
+          text = text.replace(/{주인공}과\(와\)/g, name + '과(와)');
+          text = text.replace(/{주인공}/g, name);
+        } else {
+          text = text.replace(/{주인공}은\(는\)/g, '주인공은(는)');
+          text = text.replace(/{주인공}이\(가\)/g, '주인공이(가)');
+          text = text.replace(/{주인공}을\(를\)/g, '주인공을(를)');
+          text = text.replace(/{주인공}과\(와\)/g, '주인공과(와)');
+          text = text.replace(/{주인공}/g, '주인공');
+        }
+        
+        if (block.characters[1] !== undefined && createdCharacters[block.characters[1]]) {
+          const name = createdCharacters[block.characters[1]].name;
+          text = text.replace(/{인물1}은\(는\)/g, name + '은(는)');
+          text = text.replace(/{인물1}이\(가\)/g, name + '이(가)');
+          text = text.replace(/{인물1}을\(를\)/g, name + '을(를)');
+          text = text.replace(/{인물1}과\(와\)/g, name + '과(와)');
+          text = text.replace(/{인물1}/g, name);
+        } else {
+          text = text.replace(/{인물1}은\(는\)/g, '인물1은(는)');
+          text = text.replace(/{인물1}이\(가\)/g, '인물1이(가)');
+          text = text.replace(/{인물1}을\(를\)/g, '인물1을(를)');
+          text = text.replace(/{인물1}과\(와\)/g, '인물1과(와)');
+          text = text.replace(/{인물1}/g, '인물1');
+        }
+        
+        if (block.characters[2] !== undefined && createdCharacters[block.characters[2]]) {
+          const name = createdCharacters[block.characters[2]].name;
+          text = text.replace(/{인물2}은\(는\)/g, name + '은(는)');
+          text = text.replace(/{인물2}이\(가\)/g, name + '이(가)');
+          text = text.replace(/{인물2}을\(를\)/g, name + '을(를)');
+          text = text.replace(/{인물2}과\(와\)/g, name + '과(와)');
+          text = text.replace(/{인물2}/g, name);
+        } else {
+          text = text.replace(/{인물2}은\(는\)/g, '인물2은(는)');
+          text = text.replace(/{인물2}이\(가\)/g, '인물2이(가)');
+          text = text.replace(/{인물2}을\(를\)/g, '인물2을(를)');
+          text = text.replace(/{인물2}과\(와\)/g, '인물2과(와)');
+          text = text.replace(/{인물2}/g, '인물2');
+        }
+      } else {
+        text = text.replace(/{주인공}은\(는\)/g, '주인공은(는)');
+        text = text.replace(/{주인공}이\(가\)/g, '주인공이(가)');
+        text = text.replace(/{주인공}을\(를\)/g, '주인공을(를)');
+        text = text.replace(/{주인공}과\(와\)/g, '주인공과(와)');
+        text = text.replace(/{주인공}/g, '주인공');
+        
+        text = text.replace(/{인물1}은\(는\)/g, '인물1은(는)');
+        text = text.replace(/{인물1}이\(가\)/g, '인물1이(가)');
+        text = text.replace(/{인물1}을\(를\)/g, '인물1을(를)');
+        text = text.replace(/{인물1}과\(와\)/g, '인물1과(와)');
+        text = text.replace(/{인물1}/g, '인물1');
+        
+        text = text.replace(/{인물2}은\(는\)/g, '인물2은(는)');
+        text = text.replace(/{인물2}이\(가\)/g, '인물2이(가)');
+        text = text.replace(/{인물2}을\(를\)/g, '인물2을(를)');
+        text = text.replace(/{인물2}과\(와\)/g, '인물2과(와)');
+        text = text.replace(/{인물2}/g, '인물2');
+      }
+      
+      if (block.dropdownSelections) {
+        Object.keys(block.dropdownSelections).forEach(key => {
+          const selectedIndex = block.dropdownSelections[key];
+          const options = dropdownOptions[key];
+          if (options && options[selectedIndex]) {
+            const regex = new RegExp(`\\[${key}\\]`, 'g');
+            text = text.replace(regex, options[selectedIndex]);
+          }
+        });
+      }
+      
+      return text;
+    }
+
+    function addCharacterSlot(selectedCharIndex = null) {
+      const slotsContainer = document.getElementById('character-slots');
+      const slotId = characterSlotCounter++;
+      const slotCount = slotsContainer.children.length;
+      
+      const slot = document.createElement('div');
+      slot.className = 'character-slot';
+      slot.dataset.slotId = slotId;
+      
+      const label = document.createElement('label');
+      label.textContent = `인물 ${slotCount + 1}:`;
+      
+      const select = document.createElement('select');
+      select.innerHTML = '<option value="">선택 안함</option>';
+      createdCharacters.forEach((char, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = char.name;
+        if (selectedCharIndex === index) option.selected = true;
+        select.appendChild(option);
+      });
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-character-slot';
+      removeBtn.textContent = '×';
+      removeBtn.onclick = () => {
+        slot.remove();
+        updateCharacterSlotLabels();
+        updateBlockTextWithCharacters();
+      };
+      
+      select.addEventListener('change', () => {
+        updateBlockTextWithCharacters();
+      });
+      
+      slot.appendChild(label);
+      slot.appendChild(select);
+      slot.appendChild(removeBtn);
+      slotsContainer.appendChild(slot);
+      
+      updateBlockTextWithCharacters();
+    }
+    
+    function updateBlockTextWithCharacters() {
+      if (currentEditingIndex === -1 || currentEditingStoryId === -1) return;
+      
+      const story = allStories.find(s => s.id === currentEditingStoryId);
+      if (!story || !story.blocks[currentEditingIndex]) return;
+      
+      const block = story.blocks[currentEditingIndex];
+      
+      if (block.isFreeBlock) return;
+      
+      const characterSlots = document.querySelectorAll('.character-slot select');
+      
+      let newText = block.text;
+      
+      const selectedCharacters = [];
+      characterSlots.forEach(select => {
+        if (select.value !== '') {
+          selectedCharacters.push(parseInt(select.value));
+        }
+      });
+      
+      if (selectedCharacters.length === 0) {
+        newText = newText.replace(/{인물\d+}와?\s*{인물\d+}가/g, '{주인공}이');
+        newText = newText.replace(/{인물\d+}과?\s*{인물\d+}가/g, '{주인공}이');
+        newText = newText.replace(/{인물\d+}/g, '{주인공}');
+      } else if (selectedCharacters.length === 1) {
+        const char = createdCharacters[selectedCharacters[0]];
+        if (char) {
+          const name = char.name;
+          newText = newText.replace(/{인물\d+}와?\s*{인물\d+}가/g, name + '이(가)');
+          newText = newText.replace(/{인물\d+}과?\s*{인물\d+}가/g, name + '이(가)');
+          newText = newText.replace(/{주인공}/g, name);
+        }
+      } else if (selectedCharacters.length >= 2) {
+        const char1 = createdCharacters[selectedCharacters[0]];
+        const char2 = createdCharacters[selectedCharacters[1]];
+        
+        if (char1 && char2) {
+          const name1 = char1.name;
+          const name2 = char2.name;
+          
+          const josa1 = getJosa(name1, '과와');
+          const josa2 = getJosa(name2, '이가');
+          
+          newText = newText.replace(/{주인공}이/g, name1 + josa1 + ' ' + name2 + josa2);
+          newText = newText.replace(/{주인공}가/g, name1 + josa1 + ' ' + name2 + josa2);
+          newText = newText.replace(/{주인공}/g, name1 + josa1 + ' ' + name2);
+        }
+      }
+      
+      block.customText = newText;
+    }
+
+    function updateCharacterSlotLabels() {
+      const slots = document.querySelectorAll('.character-slot');
+      slots.forEach((slot, index) => {
+        const label = slot.querySelector('label');
+        label.textContent = `인물 ${index + 1}:`;
+      });
+    }
+
+    function editBlock(storyId, blockIndex) {
+      currentEditingIndex = blockIndex;
+      currentEditingStoryId = storyId;
+      
+      const story = allStories.find(s => s.id === storyId);
+      if (!story || !story.blocks[blockIndex]) return;
+      
+      const block = story.blocks[blockIndex];
+      const originalText = block.text || block.customText;
+      
+      if (block.isFreeBlock) {
+        document.getElementById('free-text-section').style.display = 'block';
+        document.getElementById('character-section').style.display = 'none';
+        document.getElementById('dropdown-sections').innerHTML = '';
+        
+        const textarea = document.getElementById('free-text-edit');
+        textarea.value = block.customText;
+        
+        document.getElementById('edit-modal').style.display = 'flex';
+        return;
+      }
+      
+      document.getElementById('free-text-section').style.display = 'none';
+      
+      const slotsContainer = document.getElementById('character-slots');
+      slotsContainer.innerHTML = '';
+      characterSlotCounter = 0;
+      
+      const hasCharacterPlaceholders = originalText.includes('{주인공}') || originalText.includes('{인물1}') || originalText.includes('{인물2}');
+      
+      if (hasCharacterPlaceholders) {
+        document.getElementById('character-section').style.display = 'block';
+        
+        if (block.characters && block.characters.length > 0) {
+          block.characters.forEach(charIndex => {
+            addCharacterSlot(charIndex);
+          });
+        } else {
+          addCharacterSlot();
+        }
+      } else {
+        document.getElementById('character-section').style.display = 'none';
+      }
+      
+      const dropdownSections = document.getElementById('dropdown-sections');
+      dropdownSections.innerHTML = '';
+      
+      const keysToShow = block.dropdownKeys || [];
+      
+      keysToShow.forEach(key => {
+        if (!dropdownOptions[key]) return;
+        
+        const formGroup = document.createElement('div');
+        formGroup.className = 'edit-form-group';
+        
+        const label = document.createElement('label');
+        const labelNames = {
+          '장소': '🏞️ 장소',
+          '감정': '😊 감정',
+          '동물': '🐰 동물',
+          '음식': '🍎 음식',
+          '마법물건': '✨ 마법물건',
+          '문제상황': '⚠️ 문제상황',
+          '협력자': '🤝 협력자',
+          '해결방법': '💡 해결방법',
+          '느낀감정': '💖 느낀감정'
+        };
+        label.textContent = labelNames[key] || (key + ' 선택:');
+        
+        const select = document.createElement('select');
+        select.dataset.dropdownKey = key;
+        
+        const options = dropdownOptions[key];
+        
+        options.forEach((option, index) => {
+          const optElement = document.createElement('option');
+          optElement.value = index;
+          optElement.textContent = option;
+          
+          if (block.dropdownSelections && block.dropdownSelections[key] === index) {
+            optElement.selected = true;
+          }
+          select.appendChild(optElement);
+        });
+        
+        formGroup.appendChild(label);
+        formGroup.appendChild(select);
+        dropdownSections.appendChild(formGroup);
+      });
+      
+      document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').style.display = 'none';
+      currentEditingIndex = -1;
+      currentEditingStoryId = -1;
+    }
+
+    function saveBlockEdit() {
+      if (currentEditingIndex === -1 || currentEditingStoryId === -1) return;
+      
+      const story = allStories.find(s => s.id === currentEditingStoryId);
+      if (!story || !story.blocks[currentEditingIndex]) return;
+      
+      const block = story.blocks[currentEditingIndex];
+      
+      if (block.isFreeBlock) {
+        const textarea = document.getElementById('free-text-edit');
+        block.customText = textarea.value.trim();
+        block.text = textarea.value.trim();
+        
+        rebuildStoryBlocks(currentEditingStoryId);
+        closeEditModal();
+        saveToLocalStorage(); // 자동 저장
+        return;
+      }
+      
+      const characterSlots = document.querySelectorAll('.character-slot select');
+      block.characters = [];
+      characterSlots.forEach(select => {
+        if (select.value !== '') {
+          block.characters.push(parseInt(select.value));
+        }
+      });
+      
+      const dropdownSelects = document.querySelectorAll('#dropdown-sections select');
+      if (!block.dropdownSelections) block.dropdownSelections = {};
+      
+      dropdownSelects.forEach(select => {
+        const key = select.dataset.dropdownKey;
+        const value = select.value;
+        
+        if (value !== '') {
+          block.dropdownSelections[key] = parseInt(value);
+        }
+      });
+      
+      rebuildStoryBlocks(currentEditingStoryId);
+      closeEditModal();
+      saveToLocalStorage(); // 자동 저장
+    }
+
+    // 이벤트 위임을 사용한 클릭 핸들러
+    document.addEventListener('click', (e) => {
+      // 카테고리 토글
+      const categoryTitle = e.target.closest('.category-title');
+      if (categoryTitle) {
+        const category = categoryTitle.dataset.category;
+        if (category) toggleCategory(category);
+        return;
+      }
+      
+      // 인물 삭제
+      const deleteChar = e.target.closest('.delete-char');
+      if (deleteChar) {
+        const index = parseInt(deleteChar.dataset.charIndex);
+        removeCharacter(index);
+        return;
+      }
+      
+      // 블록 편집
+      const editBtn = e.target.closest('.edit-btn');
+      if (editBtn) {
+        const storyId = parseInt(editBtn.dataset.storyId);
+        const blockIndex = parseInt(editBtn.dataset.blockIndex);
+        editBlock(storyId, blockIndex);
+        return;
+      }
+      
+      // 블록 삭제
+      const deleteBtn = e.target.closest('.delete-btn');
+      if (deleteBtn) {
+        const storyId = parseInt(deleteBtn.dataset.storyId);
+        const blockIndex = parseInt(deleteBtn.dataset.blockIndex);
+        removeBlock(storyId, blockIndex);
+        return;
+      }
+      
+      // 단일 이야기 실행
+      const runSingleBtn = e.target.closest('.run-single-btn');
+      if (runSingleBtn) {
+        const storyId = parseInt(runSingleBtn.dataset.storyId);
+        runSingleStory(storyId);
+        return;
+      }
+      
+      // 이야기 삭제
+      const deleteStoryBtn = e.target.closest('.delete-story-btn');
+      if (deleteStoryBtn) {
+        const storyId = parseInt(deleteStoryBtn.dataset.storyId);
+        deleteStory(storyId);
+        return;
+      }
+      
+      // 모달 배경 클릭
+      if (e.target.id === 'edit-modal') {
+        closeEditModal();
+      }
+    });
+
+    document.getElementById('add-character-btn').addEventListener('click', addCharacter);
+    document.getElementById('run-button').addEventListener('click', runAllStories);
+    document.getElementById('add-story-button').addEventListener('click', addNewStory);
+
+    // 페이지 로드 시 저장된 데이터 불러오기
+    const loaded = loadFromLocalStorage();
+    if (!loaded) {
+      // 저장된 데이터가 없으면 기본 스토리 추가
+      allStories.push({ id: 0, blocks: [] });
+    }
+
+    // 초기화
+    initializeBlocks();
+    setupDropZone();
+    
+    // 모든 버튼에 터치 지원 추가 (초기화 후)
+    setTimeout(() => {
+      document.querySelectorAll('button:not([data-touch-enabled])').forEach(element => {
+        element.setAttribute('data-touch-enabled', 'true');
+        element.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          this.click();
+        }, { passive: false });
+      });
+    }, 100);
+  </script>
+ </body>
